@@ -1,0 +1,2252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Road Warrior Pro - Rider Registration & Management</title>
+    <meta name="description" content="Road Warrior Pro - Register as a delivery rider, track your points, referrals, and compete on the leaderboard.">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* ===== ADDITIONAL STYLES FOR NEW FEATURES ===== */
+
+        /* Multi-step form progress */
+        .form-progress {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0;
+            margin-bottom: 1.5rem;
+            padding: 0 0.5rem;
+            overflow-x: auto;
+        }
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            min-width: 40px;
+            position: relative;
+            cursor: default;
+        }
+        .progress-step::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            left: -50%;
+            width: 100%;
+            height: 2px;
+            background: var(--card-border);
+            z-index: 0;
+        }
+        .progress-step:first-child::before { display: none; }
+        .progress-step.done::before { background: var(--primary-color); }
+        .step-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+        .progress-step.active .step-circle {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 0 0 4px rgba(59,130,246,0.2);
+        }
+        .progress-step.done .step-circle {
+            border-color: var(--success-color);
+            background: var(--success-color);
+            color: white;
+        }
+        .step-label {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            text-align: center;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .progress-step.active .step-label { color: var(--primary-color); }
+        .progress-step.done .step-label { color: var(--success-color); }
+
+        /* Form sections */
+        .form-section {
+            display: none;
+            animation: fadeInUp 0.3s ease;
+        }
+        .form-section.active { display: block; }
+        .section-title-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(249,115,22,0.15));
+            border: 1px solid rgba(59,130,246,0.3);
+            border-radius: var(--border-radius-sm);
+            padding: 0.4rem 0.9rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Checkbox group */
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.6rem 0.75rem;
+            border: 1px solid var(--card-border);
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+        }
+        .checkbox-item:hover { border-color: var(--primary-color); background: rgba(59,130,246,0.05); }
+        .checkbox-item input[type="checkbox"] { accent-color: var(--primary-color); width: 16px; height: 16px; cursor: pointer; }
+        .checkbox-item.checked { border-color: var(--primary-color); background: rgba(59,130,246,0.08); }
+
+        /* Radio group */
+        .radio-group { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
+        .radio-group.inline { flex-direction: row; flex-wrap: wrap; }
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.6rem 0.9rem;
+            border: 1px solid var(--card-border);
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+        }
+        .radio-item:hover { border-color: var(--primary-color); background: rgba(59,130,246,0.05); }
+        .radio-item input[type="radio"] { accent-color: var(--primary-color); width: 16px; height: 16px; cursor: pointer; }
+        .radio-item.selected { border-color: var(--primary-color); background: rgba(59,130,246,0.08); }
+
+        /* Success registration panel */
+        .success-panel {
+            text-align: center;
+            padding: 2rem;
+            animation: fadeInUp 0.5s ease;
+        }
+        .success-panel .success-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: bounceIn 0.6s ease;
+        }
+        .referral-code-display {
+            background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(249,115,22,0.1));
+            border: 2px solid var(--primary-color);
+            border-radius: var(--border-radius-md);
+            padding: 1.25rem;
+            margin: 1.25rem 0;
+            font-family: monospace;
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: var(--primary-color);
+        }
+
+        /* Admin tabs */
+        .admin-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 0;
+        }
+        .admin-tab {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+            white-space: nowrap;
+        }
+        .admin-tab:hover { color: var(--text-primary); }
+        .admin-tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+
+        /* Segment tags */
+        .tag-pill {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin: 2px;
+            white-space: nowrap;
+        }
+        .tag-hot-ev { background: rgba(249,115,22,0.2); color: #f97316; border: 1px solid rgba(249,115,22,0.4); }
+        .tag-insurance { background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid rgba(239,68,68,0.4); }
+        .tag-retrofit { background: rgba(139,92,246,0.2); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.4); }
+        .tag-petrol { background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid rgba(251,191,36,0.4); }
+        .tag-ev { background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid rgba(16,185,129,0.4); }
+        .tag-swing { background: rgba(59,130,246,0.2); color: #3b82f6; border: 1px solid rgba(59,130,246,0.4); }
+
+        /* Score page */
+        .score-lookup-card { max-width: 500px; margin: 2rem auto; }
+        .score-display { text-align: center; padding: 2rem; }
+        .score-big { font-size: 4rem; font-weight: 900; font-family: 'Outfit', sans-serif; background: linear-gradient(135deg, #3b82f6, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .referral-code-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(59,130,246,0.1);
+            border: 1px solid rgba(59,130,246,0.3);
+            border-radius: var(--border-radius-md);
+            padding: 0.75rem 1.25rem;
+            font-family: monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            letter-spacing: 2px;
+            margin: 1rem auto;
+        }
+
+        /* Milestone progress */
+        .milestone-track {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--card-border);
+            border-radius: var(--border-radius-md);
+            padding: 1rem 1.25rem;
+            margin-top: 1rem;
+        }
+        .milestone-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .milestone-row:last-child { border-bottom: none; }
+        .milestone-icon { font-size: 1.4rem; min-width: 30px; text-align: center; }
+        .milestone-bar-wrap { flex: 1; }
+        .milestone-bar { height: 6px; background: var(--card-border); border-radius: 3px; overflow: hidden; }
+        .milestone-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #3b82f6, #f97316); transition: width 0.5s ease; }
+
+        /* QR code container */
+        #qrCodeContainer { display: flex; justify-content: center; align-items: center; min-height: 140px; }
+        #qrCodeContainer canvas, #qrCodeContainer img { border-radius: 8px; }
+
+        /* WhatsApp success section */
+        .whatsapp-confirm {
+            background: rgba(37,211,102,0.08);
+            border: 1px solid rgba(37,211,102,0.3);
+            border-radius: var(--border-radius-md);
+            padding: 1rem 1.25rem;
+            margin: 1rem 0;
+        }
+        .whatsapp-confirm h4 { color: #25D366; display: flex; align-items: center; gap: 0.5rem; }
+
+        /* Mobile form optimizations */
+        @media (max-width: 600px) {
+            .checkbox-group { grid-template-columns: 1fr; }
+            .radio-group.inline { flex-direction: column; }
+            .form-progress { gap: 0; padding: 0; }
+            .step-label { display: none; }
+        }
+
+        /* Admin tab panels */
+        .admin-panel { display: none; }
+        .admin-panel.active { display: block; animation: fadeInUp 0.3s ease; }
+
+        /* Conditional section animation */
+        .conditional-section {
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        .conditional-section.hidden-section {
+            max-height: 0;
+            opacity: 0;
+            margin: 0;
+            padding: 0;
+        }
+        .conditional-section.visible-section {
+            max-height: 500px;
+            opacity: 1;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            60% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-brand" onclick="navigateTo('/home')">
+            <div class="rw-logo">RW</div>
+            <span class="brand-text">Road Warrior Pro</span>
+        </div>
+        <ul class="navbar-nav">
+            <li class="nav-item"><a href="/home" class="nav-link active" id="navHome" onclick="handleNavLinkClick(event, '/home')"><i class="fas fa-home"></i> <span data-i18n="nav_home">Home</span></a></li>
+            <li class="nav-item"><a href="/score" class="nav-link" id="navScore" onclick="handleNavLinkClick(event, '/score')"><i class="fas fa-trophy"></i> <span data-i18n="nav_score">Score</span></a></li>
+            <li class="nav-item"><a href="/vehicles" class="nav-link" id="navVehicles" onclick="handleNavLinkClick(event, '/vehicles')"><i class="fas fa-car"></i> <span data-i18n="nav_vehicles">Vehicles</span></a></li>
+            <li class="nav-item"><a href="/dashboard" class="nav-link" id="navDashboard" onclick="handleNavLinkClick(event, '/dashboard')"><i class="fas fa-chart-line"></i> <span data-i18n="nav_dashboard">Dashboard</span></a></li>
+            <li class="nav-item"><a href="/profile" class="nav-link" id="navProfile" onclick="handleNavLinkClick(event, '/profile')"><i class="fas fa-user"></i> <span data-i18n="nav_profile">Profile</span></a></li>
+            <li class="nav-item"><a href="/admin" class="nav-link" id="navAdmin" onclick="handleNavLinkClick(event, '/admin')"><i class="fas fa-cog"></i> <span data-i18n="nav_admin">Admin</span></a></li>
+        </ul>
+        <div class="navbar-end">
+            <select class="lang-select" onchange="changeLanguage(this.value)" id="langSelector">
+                <option value="en">🇺🇸 EN</option>
+                <option value="hi">🇮🇳 HI</option>
+                <option value="kn">🇮🇳 KN</option>
+            </select>
+            <button class="btn btn-primary btn-small" id="loginLogoutBtn" onclick="toggleAuth()"><i class="fas fa-sign-in-alt"></i> <span data-i18n="login">Login</span></button>
+        </div>
+    </nav>
+
+    <main class="container">
+
+        <!-- ======= SECTION 1: HOME / REGISTER VIEW ======= -->
+        <section id="home-view" class="section-view active">
+            <div class="row cols-2" id="authLayout" style="margin-top:1rem; align-items: flex-start;">
+
+                <!-- Welcome Card -->
+                <div class="card flex-center" style="flex-direction:column; justify-content:center; text-align:center; padding:3rem 2rem;">
+                    <i class="fas fa-shipping-fast" style="font-size:4.5rem; background:linear-gradient(135deg,var(--primary-color),var(--secondary-color)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:1.5rem;"></i>
+                    <h1 style="font-family:'Outfit',sans-serif; font-size:2rem; font-weight:800; line-height:1.2;" data-i18n="welcome_title">Empower Your Delivery Journey</h1>
+                    <p style="color:var(--text-secondary); margin-top:1rem; max-width:420px;" data-i18n="welcome_subtitle">Join thousands of riders. Complete the survey, earn your referral code, and start winning points!</p>
+                    <div style="display:flex; gap:1.5rem; margin-top:2rem; width:100%; justify-content:center;" class="pulse">
+                        <div style="border-right:1px solid var(--card-border); padding-right:1.5rem;">
+                            <h3 style="font-size:1.5rem; color:var(--primary-color);">2.4K+</h3>
+                            <p style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;" data-i18n="label_total_riders">Active Riders</p>
+                        </div>
+                        <div style="border-right:1px solid var(--card-border); padding-right:1.5rem;">
+                            <h3 style="font-size:1.5rem; color:var(--secondary-color);">10 pts</h3>
+                            <p style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;" data-i18n="label_start_points">Starting Points</p>
+                        </div>
+                        <div>
+                            <h3 style="font-size:1.5rem; color:#25D366;">5 pts</h3>
+                            <p style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;" data-i18n="label_per_referral">Per Referral</p>
+                        </div>
+                    </div>
+                    <div style="margin-top:2rem; display:flex; flex-direction:column; gap:0.75rem; width:100%;">
+                        <div style="display:flex; align-items:center; gap:0.75rem; background:rgba(255,255,255,0.03); border:1px solid var(--card-border); border-radius:var(--border-radius-sm); padding:0.75rem 1rem; text-align:left;">
+                            <span style="font-size:1.5rem;">🏅</span>
+                            <div><strong data-i18n="milestone_10_title">10 Referrals</strong> → +100 bonus points + <span style="color:#25D366;">WhatsApp badge</span></div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:0.75rem; background:rgba(255,255,255,0.03); border:1px solid var(--card-border); border-radius:var(--border-radius-sm); padding:0.75rem 1rem; text-align:left;">
+                            <span style="font-size:1.5rem;">🏆</span>
+                            <div><strong data-i18n="milestone_25_title">25 Referrals</strong> → +300 bonus points + <span style="color:#25D366;">Champion message</span></div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:0.75rem; background:rgba(255,255,255,0.03); border:1px solid var(--card-border); border-radius:var(--border-radius-sm); padding:0.75rem 1rem; text-align:left;">
+                            <span style="font-size:1.5rem;">🎰</span>
+                            <div><strong data-i18n="milestone_50_title">50 Referrals</strong> → +500 points + <span style="color:#fbbf24;">Lucky Draw entry</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Auth/Register Card -->
+                <div class="card" id="authBox">
+
+                    <!-- Login Form -->
+                    <div id="loginCard">
+                        <div class="card-header" style="border:none; padding-bottom:0;">
+                            <h2 class="card-title" data-i18n="login_title"><i class="fas fa-sign-in-alt"></i> Login</h2>
+                        </div>
+                        <div class="card-body" style="margin-top:1rem;">
+                            <div class="alert alert-info"><i class="fas fa-info-circle"></i> <span data-i18n="login_alert">Use demo@example.com / password or register a new rider.</span></div>
+                            <form id="loginForm" onsubmit="handleLogin(event)">
+                                <div class="form-group">
+                                    <label for="loginEmail" data-i18n="label_email">Email Address</label>
+                                    <input type="email" id="loginEmail" class="form-control" placeholder="your@email.com" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="loginPassword" data-i18n="label_password">Password</label>
+                                    <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100" style="margin-top:0.5rem;"><i class="fas fa-sign-in-alt"></i> <span data-i18n="login">Login</span></button>
+                            </form>
+                            <p style="text-align:center; margin-top:1.5rem; color:var(--text-secondary);">
+                                <span data-i18n="no_account">Don't have an account?</span> <a href="#" style="color:var(--primary-color); font-weight:600; text-decoration:none;" onclick="toggleAuthCards(event)" data-i18n="register_link">Register here</a>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Multi-Step Registration Form -->
+                    <div id="registerCard" style="display:none;">
+                        <div class="card-header" style="border:none; padding-bottom:0;">
+                            <h2 class="card-title" data-i18n="register_title"><i class="fas fa-user-plus"></i> Rider Registration</h2>
+                        </div>
+                        <div class="card-body" style="margin-top:1rem;">
+
+                            <!-- Step Progress Bar -->
+                            <div class="form-progress" id="formProgress">
+                                <div class="progress-step active" id="step-indicator-1">
+                                    <div class="step-circle">A</div>
+                                    <div class="step-label" data-i18n="step_profile">Profile</div>
+                                </div>
+                                <div class="progress-step" id="step-indicator-2">
+                                    <div class="step-circle">B</div>
+                                    <div class="step-label" data-i18n="step_vehicle">Vehicle</div>
+                                </div>
+                                <div class="progress-step" id="step-indicator-3">
+                                    <div class="step-circle">C</div>
+                                    <div class="step-label" data-i18n="step_challenges">Challenges</div>
+                                </div>
+                                <div class="progress-step" id="step-indicator-4">
+                                    <div class="step-circle">D</div>
+                                    <div class="step-label" data-i18n="step_insurance">Insurance</div>
+                                </div>
+                                <div class="progress-step" id="step-indicator-5">
+                                    <div class="step-circle">E</div>
+                                    <div class="step-label" data-i18n="step_ev">EV</div>
+                                </div>
+                                <div class="progress-step" id="step-indicator-6">
+                                    <div class="step-circle">F</div>
+                                    <div class="step-label" data-i18n="step_referral">Referral</div>
+                                </div>
+                            </div>
+
+                            <!-- SECTION A: Basic Profile -->
+                            <div class="form-section active" id="regSection1">
+                                <div class="section-title-badge"><i class="fas fa-user"></i> <span data-i18n="sec_a_title">Section A — Basic Profile</span></div>
+                                <div class="form-group">
+                                    <label for="regFullName" data-i18n="label_fullname">Full Name</label>
+                                    <input type="text" id="regFullName" class="form-control" placeholder="Ramesh Kumar" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="regPhone"><span data-i18n="label_whatsapp">WhatsApp Number</span> (10 digits)</label>
+                                    <div style="position:relative;">
+                                        <input type="tel" id="regPhone" class="form-control" placeholder="9876543210" maxlength="10" required style="padding-right:2.5rem;" oninput="validateRegPhone(this)">
+                                        <span id="phoneValIcon" style="position:absolute; right:1rem; top:50%; transform:translateY(-50%); display:none;">
+                                            <i class="fas fa-check-circle text-success-color" id="phoneCheckIcon" style="display:none;"></i>
+                                            <i class="fas fa-times-circle text-danger-color" id="phoneCrossIcon" style="display:none;"></i>
+                                        </span>
+                                    </div>
+                                    <span id="phoneErrMsg" class="error-message hidden"><i class="fas fa-times-circle"></i> <span data-i18n="phone_error">Phone must be 10 digits</span></span>
+                                    <span id="dupPhoneMsg" class="error-message hidden" style="color:#f97316;"><i class="fas fa-exclamation-triangle"></i> <span data-i18n="phone_dup">This phone is already registered!</span></span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="regCity" data-i18n="label_city">City</label>
+                                    <select id="regCity" class="form-control" required onchange="onCityChange(this.value)">
+                                        <option value="" data-i18n="select_city">Select your city</option>
+                                        <option value="Bangalore">Bangalore</option>
+                                        <option value="Mysore">Mysore</option>
+                                        <option value="Mumbai">Mumbai</option>
+                                        <option value="Pune">Pune</option>
+                                        <option value="Delhi">Delhi</option>
+                                        <option value="Lucknow">Lucknow</option>
+                                        <option value="Hyderabad">Hyderabad</option>
+                                        <option value="Chennai">Chennai</option>
+                                        <option value="Kolkata">Kolkata</option>
+                                        <option value="Ahmedabad">Ahmedabad</option>
+                                        <option value="Jaipur">Jaipur</option>
+                                    </select>
+                                    <small id="langAutoDetect" style="color:var(--primary-color); display:none; margin-top:4px;"><i class="fas fa-language"></i> <span id="langAutoMsg"></span></small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="regPlatform" data-i18n="label_platform">Delivery Platform</label>
+                                    <select id="regPlatform" class="form-control" required>
+                                        <option value="" data-i18n="select_platform">Select platform</option>
+                                        <option value="Swiggy">🟠 Swiggy</option>
+                                        <option value="Zomato">🔴 Zomato</option>
+                                        <option value="Blinkit">🟡 Blinkit</option>
+                                        <option value="Porter">🔵 Porter</option>
+                                        <option value="Dunzo">🟢 Dunzo</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="regExp" data-i18n="label_exp">Years of Experience</label>
+                                    <select id="regExp" class="form-control" required>
+                                        <option value="">Select experience</option>
+                                        <option value="0">Less than 1 year</option>
+                                        <option value="1">1 year</option>
+                                        <option value="2">2 years</option>
+                                        <option value="3">3 years</option>
+                                        <option value="4">4 years</option>
+                                        <option value="5">5+ years</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="regEmail" data-i18n="label_email">Email <span style="color:var(--text-secondary); font-size:0.8rem;">(optional)</span></label>
+                                    <input type="email" id="regEmail" class="form-control" placeholder="your@email.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="regPassword" data-i18n="label_password">Password</label>
+                                    <input type="password" id="regPassword" class="form-control" placeholder="Create password" required>
+                                </div>
+                                <button type="button" class="btn btn-primary w-100" onclick="gotoStep(2)" id="stepABtn"><i class="fas fa-arrow-right"></i> <span data-i18n="btn_next">Next: Vehicle Info</span></button>
+                            </div>
+
+                            <!-- SECTION B: Current Vehicle -->
+                            <div class="form-section" id="regSection2">
+                                <div class="section-title-badge"><i class="fas fa-motorcycle"></i> <span data-i18n="sec_b_title">Section B — Current Vehicle</span></div>
+                                <div class="form-group">
+                                    <label data-i18n="label_vehicle_type">Vehicle Type</label>
+                                    <div class="radio-group inline" id="vehicleTypeGroup">
+                                        <label class="radio-item"><input type="radio" name="vehicleType" value="Petrol two-wheeler" onchange="onVehicleTypeChange(this.value)"> 🛵 <span data-i18n="vt_petrol">Petrol Two-Wheeler</span></label>
+                                        <label class="radio-item"><input type="radio" name="vehicleType" value="Diesel two-wheeler" onchange="onVehicleTypeChange(this.value)"> 🏍️ <span data-i18n="vt_diesel">Diesel Two-Wheeler</span></label>
+                                        <label class="radio-item"><input type="radio" name="vehicleType" value="Electric two-wheeler" onchange="onVehicleTypeChange(this.value)"> ⚡ <span data-i18n="vt_electric">Electric Two-Wheeler</span></label>
+                                        <label class="radio-item"><input type="radio" name="vehicleType" value="Other" onchange="onVehicleTypeChange(this.value)"> 🚲 <span data-i18n="vt_other">Other</span></label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="regVehicleModel" data-i18n="label_vehicle_model">Vehicle Brand & Model <span style="color:var(--text-secondary); font-size:0.8rem;">(optional)</span></label>
+                                    <input type="text" id="regVehicleModel" class="form-control" placeholder="e.g. Honda Activa 6G">
+                                </div>
+                                <div class="form-group">
+                                    <label data-i18n="label_fuel_method">How do you fuel/charge?</label>
+                                    <div class="radio-group inline">
+                                        <label class="radio-item"><input type="radio" name="fuelMethod" value="Petrol pump"> ⛽ <span data-i18n="fm_petrol">Petrol Pump</span></label>
+                                        <label class="radio-item"><input type="radio" name="fuelMethod" value="Home charging"> 🏠 <span data-i18n="fm_home">Home Charging</span></label>
+                                        <label class="radio-item"><input type="radio" name="fuelMethod" value="Battery swapping station"> 🔋 <span data-i18n="fm_swap">Battery Swap</span></label>
+                                        <label class="radio-item"><input type="radio" name="fuelMethod" value="Other"> 🔌 <span data-i18n="fm_other">Other</span></label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="regFuelExp" data-i18n="label_fuel_expense">Weekly Fuel/Charge Expense (₹)</label>
+                                    <input type="number" id="regFuelExp" class="form-control" placeholder="e.g. 600" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="regMaintExp" data-i18n="label_maint_expense">Monthly Maintenance Expense (₹)</label>
+                                    <input type="number" id="regMaintExp" class="form-control" placeholder="e.g. 300" min="0">
+                                </div>
+                                <div style="display:flex; gap:0.75rem;">
+                                    <button type="button" class="btn btn-secondary" onclick="gotoStep(1)"><i class="fas fa-arrow-left"></i> <span data-i18n="btn_back">Back</span></button>
+                                    <button type="button" class="btn btn-primary" style="flex:1;" onclick="gotoStep(3)"><i class="fas fa-arrow-right"></i> <span data-i18n="btn_next_c">Next: Challenges</span></button>
+                                </div>
+                            </div>
+
+                            <!-- SECTION C: Challenges -->
+                            <div class="form-section" id="regSection3">
+                                <div class="section-title-badge"><i class="fas fa-exclamation-triangle"></i> <span data-i18n="sec_c_title">Section C — Challenges & Pain Points</span></div>
+                                <div class="form-group">
+                                    <label data-i18n="label_top_challenges">Top Challenges (select up to 3)</label>
+                                    <div class="checkbox-group" id="challengesGroup">
+                                        <label class="checkbox-item"><input type="checkbox" name="challenges" value="High fuel cost"> ⛽ <span data-i18n="ch_fuel">High fuel cost</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="challenges" value="Frequent breakdown"> 🔧 <span data-i18n="ch_breakdown">Frequent breakdown</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="challenges" value="No nearby charging station"> 🔌 <span data-i18n="ch_charging">No nearby charging station</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="challenges" value="Battery range anxiety"> 📉 <span data-i18n="ch_range">Battery range anxiety</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="challenges" value="Repair costs"> 💸 <span data-i18n="ch_repair">Repair costs</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="challenges" value="Long refuelling time"> ⏱️ <span data-i18n="ch_refuel">Long refuelling time</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="challenges" value="Other"> 📝 <span data-i18n="ch_other">Other</span></label>
+                                    </div>
+                                </div>
+
+                                <!-- EV-specific challenges (conditional) -->
+                                <div class="form-group conditional-section hidden-section" id="evChallengesSection">
+                                    <label data-i18n="label_ev_challenges">EV Specific Challenges</label>
+                                    <div class="checkbox-group">
+                                        <label class="checkbox-item"><input type="checkbox" name="evChallenges" value="Battery drains too fast"> ⚡ <span data-i18n="evc_drain">Battery drains too fast</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="evChallenges" value="Swapping station too far"> 📍 <span data-i18n="evc_swap">Swapping station too far</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="evChallenges" value="Long charging time at home"> 🏠 <span data-i18n="evc_charge">Long charging time at home</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="evChallenges" value="Vehicle not powerful enough"> 💪 <span data-i18n="evc_power">Vehicle not powerful enough</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="evChallenges" value="Service centre not nearby"> 🔧 <span data-i18n="evc_service">Service centre not nearby</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="evChallenges" value="Other"> 📝 <span data-i18n="ch_other">Other</span></label>
+                                    </div>
+                                </div>
+
+                                <!-- Petrol-specific challenges (conditional) -->
+                                <div class="form-group conditional-section hidden-section" id="petrolChallengesSection">
+                                    <label data-i18n="label_petrol_challenges">Petrol Specific Challenges</label>
+                                    <div class="checkbox-group">
+                                        <label class="checkbox-item"><input type="checkbox" name="petrolChallenges" value="Fuel price too high"> 💰 <span data-i18n="pc_price">Fuel price too high</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="petrolChallenges" value="Frequent engine issues"> 🔧 <span data-i18n="pc_engine">Frequent engine issues</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="petrolChallenges" value="Pollution fine risk"> 🌫️ <span data-i18n="pc_pollution">Pollution fine risk</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="petrolChallenges" value="High servicing cost"> 💸 <span data-i18n="pc_service">High servicing cost</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="petrolChallenges" value="Other"> 📝 <span data-i18n="ch_other">Other</span></label>
+                                    </div>
+                                </div>
+
+                                <div style="display:flex; gap:0.75rem;">
+                                    <button type="button" class="btn btn-secondary" onclick="gotoStep(2)"><i class="fas fa-arrow-left"></i></button>
+                                    <button type="button" class="btn btn-primary" style="flex:1;" onclick="gotoStep(4)"><i class="fas fa-arrow-right"></i> <span data-i18n="btn_next_d">Next: Insurance</span></button>
+                                </div>
+                            </div>
+
+                            <!-- SECTION D: Insurance -->
+                            <div class="form-section" id="regSection4">
+                                <div class="section-title-badge"><i class="fas fa-shield-alt"></i> <span data-i18n="sec_d_title">Section D — Insurance</span></div>
+                                <div class="form-group">
+                                    <label data-i18n="label_accidental_ins">Do you have accidental insurance?</label>
+                                    <div class="radio-group inline">
+                                        <label class="radio-item"><input type="radio" name="hasAccidental" value="Yes"> ✅ <span data-i18n="opt_yes">Yes</span></label>
+                                        <label class="radio-item"><input type="radio" name="hasAccidental" value="No"> ❌ <span data-i18n="opt_no">No</span></label>
+                                        <label class="radio-item"><input type="radio" name="hasAccidental" value="Not sure"> 🤔 <span data-i18n="opt_not_sure">Not sure</span></label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label data-i18n="label_health_ins">Do you have personal health insurance?</label>
+                                    <div class="radio-group inline">
+                                        <label class="radio-item"><input type="radio" name="hasHealth" value="Yes"> ✅ <span data-i18n="opt_yes">Yes</span></label>
+                                        <label class="radio-item"><input type="radio" name="hasHealth" value="No"> ❌ <span data-i18n="opt_no">No</span></label>
+                                        <label class="radio-item"><input type="radio" name="hasHealth" value="Not sure"> 🤔 <span data-i18n="opt_not_sure">Not sure</span></label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label data-i18n="label_paid_pocket">Have you ever paid out-of-pocket for an accident?</label>
+                                    <div class="radio-group inline">
+                                        <label class="radio-item"><input type="radio" name="paidPocket" value="Yes"> ✅ <span data-i18n="opt_yes">Yes</span></label>
+                                        <label class="radio-item"><input type="radio" name="paidPocket" value="No"> ❌ <span data-i18n="opt_no">No</span></label>
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:0.75rem;">
+                                    <button type="button" class="btn btn-secondary" onclick="gotoStep(3)"><i class="fas fa-arrow-left"></i></button>
+                                    <button type="button" class="btn btn-primary" style="flex:1;" onclick="gotoStep(5)"><i class="fas fa-arrow-right"></i> <span data-i18n="btn_next_e">Next: EV Openness</span></button>
+                                </div>
+                            </div>
+
+                            <!-- SECTION E: Openness to Change -->
+                            <div class="form-section" id="regSection5">
+                                <div class="section-title-badge"><i class="fas fa-bolt"></i> <span data-i18n="sec_e_title">Section E — Openness to EV</span></div>
+                                <div class="form-group">
+                                    <label data-i18n="label_open_ev">Are you open to switching to an EV?</label>
+                                    <div class="radio-group inline">
+                                        <label class="radio-item"><input type="radio" name="openEV" value="Yes"> ⚡ <span data-i18n="ev_yes">Yes</span></label>
+                                        <label class="radio-item"><input type="radio" name="openEV" value="No"> 🚫 <span data-i18n="ev_no">No</span></label>
+                                        <label class="radio-item"><input type="radio" name="openEV" value="Already on EV"> ✅ <span data-i18n="ev_already">Already on EV</span></label>
+                                        <label class="radio-item"><input type="radio" name="openEV" value="Need more information"> ℹ️ <span data-i18n="ev_more_info">Need more info</span></label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label data-i18n="label_switch_triggers">What would make you switch? (multi-select)</label>
+                                    <div class="checkbox-group">
+                                        <label class="checkbox-item"><input type="checkbox" name="switchTriggers" value="Lower rental cost"> 💰 <span data-i18n="st_rental">Lower rental cost</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="switchTriggers" value="Better battery range"> 📱 <span data-i18n="st_range">Better battery range</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="switchTriggers" value="Swap stations nearby"> 🔋 <span data-i18n="st_swap">Swap stations nearby</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="switchTriggers" value="Income guarantee"> 📈 <span data-i18n="st_income">Income guarantee</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="switchTriggers" value="Employer subsidy"> 🏢 <span data-i18n="st_subsidy">Employer subsidy</span></label>
+                                        <label class="checkbox-item"><input type="checkbox" name="switchTriggers" value="Other"> 📝 <span data-i18n="ch_other">Other</span></label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label data-i18n="label_interests">Would you be interested in:</label>
+                                    <div class="radio-group">
+                                        <label class="radio-item"><input type="radio" name="interests" value="EV rental offer"> ⚡ <span data-i18n="int_ev">EV Rental Offer</span></label>
+                                        <label class="radio-item"><input type="radio" name="interests" value="Insurance quote"> 🛡️ <span data-i18n="int_ins">Insurance Quote</span></label>
+                                        <label class="radio-item"><input type="radio" name="interests" value="Retrofit information"> 🔧 <span data-i18n="int_retrofit">Retrofit Information</span></label>
+                                        <label class="radio-item"><input type="radio" name="interests" value="All of the above"> 🌟 <span data-i18n="int_all">All of the above</span></label>
+                                        <label class="radio-item"><input type="radio" name="interests" value="None"> — <span data-i18n="int_none">None</span></label>
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:0.75rem;">
+                                    <button type="button" class="btn btn-secondary" onclick="gotoStep(4)"><i class="fas fa-arrow-left"></i></button>
+                                    <button type="button" class="btn btn-primary" style="flex:1;" onclick="gotoStep(6)"><i class="fas fa-arrow-right"></i> <span data-i18n="btn_next_f">Next: Referral</span></button>
+                                </div>
+                            </div>
+
+                            <!-- SECTION F: Referral -->
+                            <div class="form-section" id="regSection6">
+                                <div class="section-title-badge"><i class="fas fa-share-alt"></i> <span data-i18n="sec_f_title">Section F — Referral</span></div>
+                                <div class="form-group">
+                                    <label data-i18n="label_referred_by">Were you referred by another rider?</label>
+                                    <div class="radio-group inline">
+                                        <label class="radio-item"><input type="radio" name="referredBy" value="yes" onchange="toggleReferralInput('yes')"> ✅ <span data-i18n="opt_yes">Yes</span></label>
+                                        <label class="radio-item"><input type="radio" name="referredBy" value="no" onchange="toggleReferralInput('no')"> ❌ <span data-i18n="opt_no">No</span></label>
+                                    </div>
+                                </div>
+                                <div class="form-group conditional-section hidden-section" id="referralCodeInputSection">
+                                    <label for="regReferralCode" data-i18n="label_referral_code">Referral Code of the rider who referred you</label>
+                                    <input type="text" id="regReferralCode" class="form-control" placeholder="e.g. RW-4821" style="text-transform:uppercase; letter-spacing:2px; font-family:monospace; font-size:1.1rem;">
+                                    <small style="color:var(--text-secondary);"><i class="fas fa-info-circle"></i> <span data-i18n="ref_code_hint">The person who shared this app with you</span></small>
+                                </div>
+                                <div style="background:rgba(37,211,102,0.05); border:1px solid rgba(37,211,102,0.2); border-radius:var(--border-radius-md); padding:1rem; margin-bottom:1rem;">
+                                    <p style="font-size:0.875rem; color:var(--text-secondary); margin:0;">
+                                        <i class="fab fa-whatsapp" style="color:#25D366;"></i> <span data-i18n="whatsapp_hint">After registration, you'll receive a WhatsApp confirmation with your referral code.</span>
+                                    </p>
+                                </div>
+                                <div style="display:flex; gap:0.75rem;">
+                                    <button type="button" class="btn btn-secondary" onclick="gotoStep(5)"><i class="fas fa-arrow-left"></i></button>
+                                    <button type="button" class="btn btn-primary" style="flex:1; background:linear-gradient(135deg,#3b82f6,#f97316);" onclick="submitRegistration()" id="submitRegBtn">
+                                        <i class="fas fa-check-circle"></i> <span data-i18n="btn_submit_reg">Complete Registration</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- SUCCESS PANEL -->
+                            <div class="form-section" id="regSuccessPanel">
+                                <div class="success-panel">
+                                    <div class="success-icon">🎉</div>
+                                    <h2 style="font-family:'Outfit',sans-serif; font-size:1.75rem; font-weight:800;" data-i18n="success_title">Registration Complete!</h2>
+                                    <p style="color:var(--text-secondary); margin-top:0.5rem;" data-i18n="success_subtitle">Welcome to Road Warrior Pro. You start with <strong style="color:var(--primary-color);">10 points</strong>!</p>
+                                    <div class="referral-code-display" id="successReferralCode">RW-XXXX</div>
+                                    <p style="font-size:0.8rem; color:var(--text-secondary);" data-i18n="share_code_hint">Share this code with other riders to earn 5 points per referral</p>
+                                    <div class="whatsapp-confirm" id="whatsappConfirmBox">
+                                        <h4><i class="fab fa-whatsapp"></i> <span data-i18n="wa_confirm_title">WhatsApp Confirmation</span></h4>
+                                        <p id="whatsappMsgPreview" style="font-size:0.85rem; margin:0.5rem 0; font-style:italic;"></p>
+                                        <a id="whatsappSendLink" href="#" target="_blank" class="btn btn-success w-100" style="background:#25D366; border-color:#25D366; margin-top:0.75rem;">
+                                            <i class="fab fa-whatsapp"></i> <span data-i18n="btn_send_whatsapp">Send WhatsApp Confirmation to yourself</span>
+                                        </a>
+                                    </div>
+                                    <div style="display:flex; gap:0.75rem; margin-top:1rem; flex-wrap:wrap;">
+                                        <button class="btn btn-primary" style="flex:1;" onclick="loginAfterRegister()"><i class="fas fa-tachometer-alt"></i> <span data-i18n="btn_goto_dashboard">Go to Dashboard</span></button>
+                                        <button class="btn btn-secondary" style="flex:1;" onclick="navigateTo('/score')"><i class="fas fa-trophy"></i> <span data-i18n="btn_view_score">View Score</span></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p style="text-align:center; margin-top:1rem; color:var(--text-secondary);" id="loginSwitchLink">
+                                <span data-i18n="have_account">Already have an account?</span> <a href="#" style="color:var(--primary-color); font-weight:600; text-decoration:none;" onclick="toggleAuthCards(event)" data-i18n="login_link">Login here</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Overview -->
+            <div class="row cols-3" style="margin-top:3rem;">
+                <div class="stat-box">
+                    <span class="stat-icon">🏍️</span>
+                    <div class="stat-label" data-i18n="feat_1_title">Multi-Vehicle Fleet</div>
+                    <p style="margin-top:0.5rem; color:var(--text-secondary); font-size:0.875rem;" data-i18n="feat_1_desc">Track petrol, diesel, and EV two-wheelers. Monitor fuel costs and insurance records.</p>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-icon">📊</span>
+                    <div class="stat-label" data-i18n="feat_2_title">Real-time Analytics</div>
+                    <p style="margin-top:0.5rem; color:var(--text-secondary); font-size:0.875rem;" data-i18n="feat_2_desc">Live charts for earnings, deliveries, city stats, and vehicle type breakdown.</p>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-icon">🏆</span>
+                    <div class="stat-label" data-i18n="feat_3_title">Points & Referrals</div>
+                    <p style="margin-top:0.5rem; color:var(--text-secondary); font-size:0.875rem;" data-i18n="feat_3_desc">Earn 10 points on registration + 5 per referral. Hit milestones for bonus WhatsApp badges!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======= SECTION 2: SCORE (PUBLIC) VIEW ======= -->
+        <section id="score-view" class="section-view">
+            <div class="flex-between mb-4">
+                <h2 style="font-family:'Outfit',sans-serif; font-size:2rem; font-weight:800;" data-i18n="score_title"><i class="fas fa-trophy text-warning-color"></i> Score & Leaderboard</h2>
+                <button class="btn-back" onclick="window.history.back()"><i class="fas fa-arrow-left"></i> <span data-i18n="back">Back</span></button>
+            </div>
+
+            <!-- Phone Lookup (Public, no login needed) -->
+            <div class="score-lookup-card">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title" data-i18n="title_score_lookup"><i class="fas fa-search text-primary-color"></i> Check Your Score</h3>
+                    </div>
+                    <div class="card-body">
+                        <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:1rem;" data-i18n="score_lookup_hint">Enter your registered WhatsApp number to see your points and referral count.</p>
+                        <div style="display:flex; gap:0.75rem;">
+                            <input type="tel" id="scoreLookupPhone" class="form-control" placeholder="9876543210" maxlength="10" style="flex:1;">
+                            <button class="btn btn-primary" onclick="lookupScore()"><i class="fas fa-search"></i></button>
+                        </div>
+                        <div id="scoreLookupResult" style="margin-top:1rem; display:none;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard -->
+            <div class="card mb-4" style="background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(249,115,22,0.15)); border-color:rgba(59,130,246,0.3);">
+                <div class="card-body">
+                    <div class="flex-between">
+                        <div>
+                            <h3 style="font-family:'Outfit',sans-serif; font-size:1.5rem;" data-i18n="rank_heading">Your Global Ranking</h3>
+                            <p style="color:var(--text-secondary); margin-top:0.25rem;" data-i18n="rank_description">Complete deliveries and refer friends to climb the leaderboard.</p>
+                        </div>
+                        <div class="text-right">
+                            <span style="font-size:2.75rem;">🏅</span>
+                            <div style="font-family:'Outfit',sans-serif; font-size:2rem; font-weight:800;" id="userRankValue">--</div>
+                            <p style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;" data-i18n="active_standing">Standings</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-5">
+                <div class="card-header">
+                    <h3 class="card-title" data-i18n="title_leaderboard_table"><i class="fas fa-list-ol text-primary-color"></i> Top Performers</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th style="width:80px;" data-i18n="tbl_rank">Rank</th>
+                                    <th data-i18n="tbl_name">Name</th>
+                                    <th data-i18n="tbl_city">City</th>
+                                    <th data-i18n="tbl_referrals">Referrals</th>
+                                    <th data-i18n="tbl_points">Points</th>
+                                    <th data-i18n="tbl_tags">Tags</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboardTableBody">
+                                <!-- Rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Achievements -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title" data-i18n="title_achievements"><i class="fas fa-medal text-warning-color"></i> Achievement Badges</h3>
+                </div>
+                <div class="card-body">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1.5rem;" id="achievementsGrid"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======= SECTION 3: MY VEHICLES VIEW ======= -->
+        <section id="vehicles-view" class="section-view">
+            <div class="flex-between mb-4">
+                <h2 style="font-family:'Outfit',sans-serif; font-size:2rem; font-weight:800;" data-i18n="vehicles_title"><i class="fas fa-car text-primary-color"></i> My Vehicles</h2>
+                <div class="flex gap-2">
+                    <button class="btn btn-primary btn-small" onclick="openModal('vehicleModal')"><i class="fas fa-plus"></i> <span data-i18n="act_add_vehicle">Add Vehicle</span></button>
+                    <button class="btn-back" onclick="window.history.back()"><i class="fas fa-arrow-left"></i> <span data-i18n="back">Back</span></button>
+                </div>
+            </div>
+            <div class="row cols-2" id="vehiclesGrid"></div>
+            <div class="card mt-5">
+                <div class="card-header">
+                    <h3 class="card-title" data-i18n="title_insurance_tracker"><i class="fas fa-file-contract text-warning-color"></i> Insurance & Documents</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th data-i18n="tbl_vehicle">Vehicle</th>
+                                    <th data-i18n="tbl_provider">Insurance Provider</th>
+                                    <th data-i18n="tbl_policy">Policy Number</th>
+                                    <th data-i18n="tbl_expiry">Expiry Date</th>
+                                    <th data-i18n="tbl_status">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="insuranceTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======= SECTION 4: DASHBOARD VIEW ======= -->
+        <section id="dashboard-view" class="section-view">
+            <div class="flex-between mb-4">
+                <h2 style="font-family:'Outfit',sans-serif; font-size:2rem; font-weight:800;" data-i18n="dashboard_title"><i class="fas fa-chart-line text-primary-color"></i> Rider Dashboard</h2>
+                <button class="btn-back" onclick="window.history.back()"><i class="fas fa-arrow-left"></i> <span data-i18n="back">Back</span></button>
+            </div>
+            <div class="row cols-4" id="statsGrid">
+                <div class="stat-box"><span class="stat-icon">📦</span><div class="stat-value" id="totalDeliveries">0</div><div class="stat-label" data-i18n="stat_deliveries">Total Deliveries</div><div class="stat-change positive"><i class="fas fa-caret-up"></i> +12%</div></div>
+                <div class="stat-box"><span class="stat-icon">💰</span><div class="stat-value" id="totalEarnings">₹0</div><div class="stat-label" data-i18n="stat_earnings">Weekly Earnings</div><div class="stat-change positive"><i class="fas fa-caret-up"></i> +8%</div></div>
+                <div class="stat-box"><span class="stat-icon">⭐</span><div class="stat-value" id="riderRating">5.0</div><div class="stat-label" data-i18n="stat_rating">Rider Rating</div><div class="stat-change positive"><i class="fas fa-caret-up"></i> +0.1</div></div>
+                <div class="stat-box"><span class="stat-icon">🏆</span><div class="stat-value" id="totalPoints">10</div><div class="stat-label" data-i18n="stat_points">Total Points</div><div class="stat-change positive"><i class="fas fa-award"></i> Active</div></div>
+            </div>
+            <div class="card mb-5">
+                <div class="card-header"><h3 class="card-title" data-i18n="quick_actions"><i class="fas fa-bolt text-warning-color"></i> Quick Actions</h3></div>
+                <div class="card-body" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1.25rem;">
+                    <button class="btn btn-primary" onclick="openModal('deliveryModal')"><i class="fas fa-plus-circle"></i> <span data-i18n="act_new_delivery">New Delivery</span></button>
+                    <button class="btn btn-secondary" onclick="openModal('vehicleModal')"><i class="fas fa-motorcycle"></i> <span data-i18n="act_add_vehicle">Add Vehicle</span></button>
+                    <button class="btn btn-secondary" onclick="navigateTo('/profile')"><i class="fas fa-user-edit"></i> <span data-i18n="act_edit_profile">Edit Profile</span></button>
+                    <button class="btn btn-secondary" onclick="navigateTo('/score')"><i class="fas fa-medal"></i> <span data-i18n="act_leaderboard">View Rankings</span></button>
+                </div>
+            </div>
+            <div class="row cols-2 mb-5">
+                <div class="card"><div class="card-header"><h3 class="card-title" data-i18n="chart_weekly_deliveries"><i class="fas fa-chart-bar text-primary-color"></i> Weekly Deliveries</h3></div><div class="card-body"><canvas id="deliveriesChart" style="max-height:280px;"></canvas></div></div>
+                <div class="card"><div class="card-header"><h3 class="card-title" data-i18n="chart_weekly_earnings"><i class="fas fa-chart-line text-success-color"></i> Weekly Earnings</h3></div><div class="card-body"><canvas id="earningsChart" style="max-height:280px;"></canvas></div></div>
+            </div>
+            <div class="row cols-2 mb-5">
+                <div class="card"><div class="card-header"><h3 class="card-title" data-i18n="chart_delivery_types"><i class="fas fa-pie-chart text-warning-color"></i> Delivery Types</h3></div><div class="card-body"><canvas id="deliveryTypesChart" style="max-height:280px;"></canvas></div></div>
+                <div class="card"><div class="card-header"><h3 class="card-title" data-i18n="chart_top_cities"><i class="fas fa-map-marker-alt text-danger-color"></i> Top Cities</h3></div><div class="card-body"><canvas id="citiesChart" style="max-height:280px;"></canvas></div></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3 class="card-title" data-i18n="title_recent_deliveries"><i class="fas fa-history text-primary-color"></i> Recent Deliveries</h3></div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead><tr><th data-i18n="tbl_id">Delivery ID</th><th data-i18n="tbl_pickup">Pickup</th><th data-i18n="tbl_dropoff">Dropoff</th><th data-i18n="tbl_type">Type</th><th data-i18n="tbl_amount">Amount</th><th data-i18n="tbl_status">Status</th><th data-i18n="tbl_action">Action</th></tr></thead>
+                            <tbody id="deliveriesTableBody"><tr><td colspan="7" class="text-center text-muted" data-i18n="no_deliveries">No deliveries yet.</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======= SECTION 5: PROFILE VIEW ======= -->
+        <section id="profile-view" class="section-view">
+            <div class="flex-between mb-4">
+                <h2 style="font-family:'Outfit',sans-serif; font-size:2rem; font-weight:800;" data-i18n="profile_title"><i class="fas fa-user-circle text-primary-color"></i> My Profile</h2>
+                <button class="btn-back" onclick="window.history.back()"><i class="fas fa-arrow-left"></i> <span data-i18n="back">Back</span></button>
+            </div>
+            <div class="row cols-2 mb-4">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title" data-i18n="title_profile_info"><i class="fas fa-id-card text-primary-color"></i> Basic Information</h3></div>
+                    <div class="card-body">
+                        <form id="profileForm" onsubmit="updateProfileInfo(event)">
+                            <div class="form-group"><label for="profileName" data-i18n="label_fullname">Full Name</label><input type="text" id="profileName" class="form-control" required></div>
+                            <div class="form-group"><label for="profileEmail" data-i18n="label_email">Email</label><input type="email" id="profileEmail" class="form-control" readonly style="opacity:0.6; cursor:not-allowed;"></div>
+                            <div class="form-group"><label for="profilePhone" data-i18n="label_phone">Phone</label><input type="tel" id="profilePhone" class="form-control" maxlength="10" required></div>
+                            <div class="form-group"><label for="profileCity" data-i18n="label_city">City</label>
+                                <select id="profileCity" class="form-control" required>
+                                    <option value="Bangalore">Bangalore</option><option value="Mysore">Mysore</option>
+                                    <option value="Mumbai">Mumbai</option><option value="Pune">Pune</option>
+                                    <option value="Delhi">Delhi</option><option value="Hyderabad">Hyderabad</option>
+                                    <option value="Chennai">Chennai</option><option value="Kolkata">Kolkata</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100" id="profileSubmitBtn"><i class="fas fa-save"></i> <span data-i18n="btn_save">Save Changes</span></button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title" data-i18n="title_payout_details"><i class="fas fa-credit-card text-success-color"></i> Bank & Payment</h3></div>
+                    <div class="card-body">
+                        <form id="paymentForm" onsubmit="updatePaymentDetails(event)">
+                            <div class="form-group"><label for="bankName" data-i18n="label_bank">Bank Name</label><input type="text" id="bankName" class="form-control" placeholder="HDFC Bank"></div>
+                            <div class="form-group"><label for="accountNo" data-i18n="label_account">Account Number</label><input type="text" id="accountNo" class="form-control"></div>
+                            <div class="form-group"><label for="ifscCode" data-i18n="label_ifsc">IFSC Code</label><input type="text" id="ifscCode" class="form-control"></div>
+                            <div class="form-group"><label for="upiId" data-i18n="label_upi">UPI ID</label><input type="text" id="upiId" class="form-control" placeholder="name@upi"></div>
+                            <button type="submit" class="btn btn-secondary w-100"><i class="fas fa-university"></i> <span data-i18n="btn_update_payment">Update Bank Details</span></button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Referral Program Card -->
+            <div class="card">
+                <div class="card-header"><h3 class="card-title" data-i18n="title_referral"><i class="fas fa-share-alt text-warning-color"></i> Referral Program</h3></div>
+                <div class="card-body">
+                    <div class="row cols-2" style="margin-bottom:0;">
+                        <div>
+                            <div class="form-group mb-4">
+                                <label data-i18n="label_ref_code">Your Referral Code & Link</label>
+                                <div style="display:flex; gap:1rem; margin-bottom:1rem; align-items:center;">
+                                    <div class="referral-code-badge" id="referralCodeDisplay" style="flex:1; justify-content:center;">RW-XXXX</div>
+                                    <button class="btn btn-primary btn-small" onclick="copyReferralCode()"><i class="fas fa-copy"></i> <span data-i18n="btn_copy">Copy</span></button>
+                                </div>
+                                <input type="text" id="referralLinkInput" class="form-control" readonly style="font-family:monospace; font-size:0.8rem; margin-bottom:0.75rem;">
+                                <button class="btn btn-success w-100" onclick="shareToWhatsApp()" style="background:#25D366; border-color:#25D366;">
+                                    <i class="fab fa-whatsapp" style="font-size:1.1rem;"></i> <span data-i18n="btn_share_whatsapp">Share via WhatsApp</span>
+                                </button>
+                            </div>
+                            <div class="row cols-2" style="margin-bottom:0;">
+                                <div class="stat-box" style="padding:1rem;">
+                                    <div class="stat-value" id="referralCount">0</div>
+                                    <div class="stat-label" data-i18n="label_successful_referrals">Referrals</div>
+                                </div>
+                                <div class="stat-box" style="padding:1rem;">
+                                    <div class="stat-value" id="profileTotalPoints">0</div>
+                                    <div class="stat-label" data-i18n="stat_points">Total Points</div>
+                                </div>
+                            </div>
+                            <!-- Milestone Progress -->
+                            <div class="milestone-track" style="margin-top:1rem;">
+                                <div style="font-size:0.8rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.75rem;" data-i18n="label_milestone_progress">Milestone Progress</div>
+                                <div class="milestone-row">
+                                    <div class="milestone-icon">🏅</div>
+                                    <div class="milestone-bar-wrap">
+                                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:3px;">
+                                            <span data-i18n="m10">10 Referrals → +100 pts</span>
+                                            <span id="m10Progress">0/10</span>
+                                        </div>
+                                        <div class="milestone-bar"><div class="milestone-fill" id="m10Bar" style="width:0%;"></div></div>
+                                    </div>
+                                </div>
+                                <div class="milestone-row">
+                                    <div class="milestone-icon">🏆</div>
+                                    <div class="milestone-bar-wrap">
+                                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:3px;">
+                                            <span data-i18n="m25">25 Referrals → +300 pts</span>
+                                            <span id="m25Progress">0/25</span>
+                                        </div>
+                                        <div class="milestone-bar"><div class="milestone-fill" id="m25Bar" style="width:0%;"></div></div>
+                                    </div>
+                                </div>
+                                <div class="milestone-row">
+                                    <div class="milestone-icon">🎰</div>
+                                    <div class="milestone-bar-wrap">
+                                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:3px;">
+                                            <span data-i18n="m50">50 Referrals → +500 pts + Lucky Draw</span>
+                                            <span id="m50Progress">0/50</span>
+                                        </div>
+                                        <div class="milestone-bar"><div class="milestone-fill" id="m50Bar" style="width:0%;"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- QR Code -->
+                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(255,255,255,0.02); border:1px dashed var(--card-border); border-radius:var(--border-radius-md); padding:1.5rem; text-align:center;">
+                            <div style="background:white; padding:0.75rem; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.25); margin-bottom:0.75rem;">
+                                <div id="qrCodeContainer"></div>
+                            </div>
+                            <span style="font-size:0.8rem; color:var(--text-secondary); font-weight:500;" data-i18n="qr_scan_hint">Scan QR to Register instantly</span>
+                            <small style="color:var(--text-secondary); font-size:0.7rem; margin-top:4px;" data-i18n="qr_offline_hint">Share offline at petrol pumps & delivery hubs</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======= SECTION 6: ADMIN VIEW ======= -->
+        <section id="admin-view" class="section-view">
+            <div class="flex-between mb-4">
+                <h2 style="font-family:'Outfit',sans-serif; font-size:2rem; font-weight:800;" data-i18n="admin_title"><i class="fas fa-cog text-primary-color"></i> Admin Dashboard</h2>
+                <button class="btn-back" onclick="window.history.back()"><i class="fas fa-arrow-left"></i> <span data-i18n="back">Back</span></button>
+            </div>
+
+            <!-- Platform Stats -->
+            <div class="row cols-4" id="adminStatsGrid">
+                <div class="stat-box"><span class="stat-icon">👥</span><div class="stat-value" id="adminTotalRiders">0</div><div class="stat-label" data-i18n="adm_riders">Total Riders</div></div>
+                <div class="stat-box"><span class="stat-icon">⚡</span><div class="stat-value" id="adminEVRiders">0</div><div class="stat-label" data-i18n="adm_ev_riders">EV Riders</div></div>
+                <div class="stat-box"><span class="stat-icon">🔴</span><div class="stat-value" id="adminHotLeads">0</div><div class="stat-label" data-i18n="adm_hot_leads">Hot EV Leads</div></div>
+                <div class="stat-box"><span class="stat-icon">🛡️</span><div class="stat-value" id="adminInsLeads">0</div><div class="stat-label" data-i18n="adm_ins_leads">Insurance Leads</div></div>
+            </div>
+
+            <!-- Admin Tabs -->
+            <div class="admin-tabs">
+                <button class="admin-tab active" onclick="switchAdminTab('allRiders')" data-i18n="tab_all_riders">All Riders</button>
+                <button class="admin-tab" onclick="switchAdminTab('evLeads')" data-i18n="tab_ev_leads">🔥 Hot EV Leads</button>
+                <button class="admin-tab" onclick="switchAdminTab('insLeads')" data-i18n="tab_ins_leads">🛡️ Insurance Leads</button>
+                <button class="admin-tab" onclick="switchAdminTab('topReferrers')" data-i18n="tab_top_referrers">🏆 Top Referrers</button>
+                <button class="admin-tab" onclick="switchAdminTab('cityStats')" data-i18n="tab_city_stats">🏙️ City Stats</button>
+            </div>
+
+            <!-- Tab: All Riders -->
+            <div class="admin-panel active" id="panel-allRiders">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title" data-i18n="title_riders_directory"><i class="fas fa-users text-primary-color"></i> All Riders Registry</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead><tr>
+                                    <th data-i18n="tbl_name">Name</th>
+                                    <th data-i18n="tbl_city">City</th>
+                                    <th data-i18n="tbl_phone">Phone</th>
+                                    <th data-i18n="tbl_vehicle_type">Vehicle</th>
+                                    <th data-i18n="tbl_points">Points</th>
+                                    <th data-i18n="tbl_referrals">Referrals</th>
+                                    <th data-i18n="tbl_tags">Segment Tags</th>
+                                </tr></thead>
+                                <tbody id="adminRidersTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: EV Leads -->
+            <div class="admin-panel" id="panel-evLeads">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title"><i class="fas fa-bolt text-warning-color"></i> Hot EV Leads — Riders Open to EV Switch</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead><tr>
+                                    <th data-i18n="tbl_name">Name</th>
+                                    <th data-i18n="tbl_city">City</th>
+                                    <th data-i18n="tbl_phone">Phone</th>
+                                    <th>Current Vehicle</th>
+                                    <th>EV Openness</th>
+                                    <th>Switch Triggers</th>
+                                </tr></thead>
+                                <tbody id="evLeadsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Insurance Leads -->
+            <div class="admin-panel" id="panel-insLeads">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title"><i class="fas fa-shield-alt text-danger-color"></i> Insurance Leads — Riders Without Coverage</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead><tr>
+                                    <th data-i18n="tbl_name">Name</th>
+                                    <th data-i18n="tbl_city">City</th>
+                                    <th data-i18n="tbl_phone">Phone</th>
+                                    <th>Accidental Ins.</th>
+                                    <th>Health Ins.</th>
+                                    <th>Paid Out-of-Pocket</th>
+                                </tr></thead>
+                                <tbody id="insLeadsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Top Referrers -->
+            <div class="admin-panel" id="panel-topReferrers">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title"><i class="fas fa-trophy text-warning-color"></i> Top Referrers Leaderboard</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead><tr>
+                                    <th>Rank</th>
+                                    <th data-i18n="tbl_name">Name</th>
+                                    <th data-i18n="tbl_city">City</th>
+                                    <th>Referral Code</th>
+                                    <th data-i18n="tbl_referrals">Referrals</th>
+                                    <th data-i18n="tbl_points">Points</th>
+                                    <th>Milestones</th>
+                                </tr></thead>
+                                <tbody id="topReferrersTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: City Stats -->
+            <div class="admin-panel" id="panel-cityStats">
+                <div class="row cols-2">
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title"><i class="fas fa-map-marker-alt text-danger-color"></i> City-wise Breakdown</h3></div>
+                        <div class="card-body"><canvas id="adminCityChart" style="max-height:300px;"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title"><i class="fas fa-motorcycle text-primary-color"></i> Vehicle Type Distribution</h3></div>
+                        <div class="card-body"><canvas id="adminVehicleChart" style="max-height:300px;"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- Delivery Modal -->
+    <div id="deliveryModal" class="modal">
+        <div class="modal-content animate-in">
+            <div class="modal-header">
+                <h2 class="modal-title" data-i18n="modal_new_delivery"><i class="fas fa-truck-loading"></i> Register New Delivery</h2>
+                <button class="modal-close" onclick="closeModal('deliveryModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="deliveryForm" onsubmit="handleCreateDelivery(event)">
+                    <div class="form-group"><label for="pickupLocation" data-i18n="label_pickup">Pickup Address</label><input type="text" id="pickupLocation" class="form-control" required></div>
+                    <div class="form-group"><label for="dropoffLocation" data-i18n="label_dropoff">Dropoff Address</label><input type="text" id="dropoffLocation" class="form-control" required></div>
+                    <div class="form-group"><label for="deliveryType" data-i18n="label_delivery_type">Delivery Type</label>
+                        <select id="deliveryType" class="form-control"><option value="food">Food</option><option value="parcel">Parcel</option><option value="document">Document</option><option value="other">Other</option></select>
+                    </div>
+                    <div class="form-group"><label for="deliveryAmount" data-i18n="label_fare">Estimated Earnings (₹)</label><input type="number" id="deliveryAmount" class="form-control" value="120" min="20" required></div>
+                    <div style="display:flex; gap:1rem; justify-content:flex-end; margin-top:1.5rem;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('deliveryModal')" data-i18n="btn_cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> <span data-i18n="btn_create">Register Order</span></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vehicle Modal -->
+    <div id="vehicleModal" class="modal">
+        <div class="modal-content animate-in">
+            <div class="modal-header">
+                <h2 class="modal-title" data-i18n="modal_add_vehicle"><i class="fas fa-motorcycle"></i> Add New Vehicle</h2>
+                <button class="modal-close" onclick="closeModal('vehicleModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="vehicleForm" onsubmit="handleAddVehicle(event)">
+                    <div class="form-group"><label for="vehicleType" data-i18n="label_vehicle_type">Vehicle Type</label>
+                        <select id="vehicleType" class="form-control" required><option value="">Select type</option><option value="bike">Bike</option><option value="scooter">Scooter</option><option value="car">Car</option><option value="van">Van</option></select>
+                    </div>
+                    <div class="form-group"><label for="licensePlate" data-i18n="label_plate">License Plate</label><input type="text" id="licensePlate" class="form-control" required></div>
+                    <div class="form-group"><label for="vehicleColor" data-i18n="label_color">Color</label><input type="text" id="vehicleColor" class="form-control" required></div>
+                    <div class="form-group"><label for="vehicleMake" data-i18n="label_make">Make</label><input type="text" id="vehicleMake" class="form-control" required></div>
+                    <div class="form-group"><label for="vehicleModel" data-i18n="label_model">Model</label><input type="text" id="vehicleModel" class="form-control" required></div>
+                    <div style="display:flex; gap:1rem; justify-content:flex-end; margin-top:1.5rem;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('vehicleModal')" data-i18n="btn_cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> <span data-i18n="btn_add">Add Vehicle</span></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SCRIPTS ==================== -->
+    <script>
+    // ===== TRANSLATIONS (EN / HI / KN) =====
+    const TRANSLATIONS = {
+        en: {
+            nav_home:"Home", nav_vehicles:"Vehicles", nav_dashboard:"Dashboard", nav_score:"Score", nav_profile:"Profile", nav_admin:"Admin",
+            logout:"Logout", login:"Login", welcome_title:"Empower Your Delivery Journey",
+            welcome_subtitle:"Join thousands of riders. Complete the survey, earn your referral code, and start winning points!",
+            label_total_riders:"Active Riders", label_start_points:"Starting Points", label_per_referral:"Per Referral",
+            milestone_10_title:"10 Referrals", milestone_25_title:"25 Referrals", milestone_50_title:"50 Referrals",
+            login_title:"Login", login_alert:"Use demo@example.com / password or register a new rider.",
+            label_email:"Email", label_password:"Password", no_account:"Don't have an account?", register_link:"Register here",
+            register_title:"Rider Registration", have_account:"Already have an account?", login_link:"Login here",
+            label_fullname:"Full Name", label_whatsapp:"WhatsApp Number", label_city:"City", select_city:"Select your city",
+            label_platform:"Delivery Platform", select_platform:"Select platform", label_exp:"Years of Experience",
+            step_profile:"Profile", step_vehicle:"Vehicle", step_challenges:"Challenges", step_insurance:"Insurance", step_ev:"EV", step_referral:"Referral",
+            sec_a_title:"Section A — Basic Profile", sec_b_title:"Section B — Current Vehicle",
+            sec_c_title:"Section C — Challenges & Pain Points", sec_d_title:"Section D — Insurance",
+            sec_e_title:"Section E — Openness to EV", sec_f_title:"Section F — Referral",
+            label_vehicle_type:"Vehicle Type", vt_petrol:"Petrol Two-Wheeler", vt_diesel:"Diesel Two-Wheeler",
+            vt_electric:"Electric Two-Wheeler", vt_other:"Other",
+            label_vehicle_model:"Vehicle Brand & Model (optional)", label_fuel_method:"How do you fuel/charge?",
+            fm_petrol:"Petrol Pump", fm_home:"Home Charging", fm_swap:"Battery Swap", fm_other:"Other",
+            label_fuel_expense:"Weekly Fuel/Charge Expense (₹)", label_maint_expense:"Monthly Maintenance Expense (₹)",
+            label_top_challenges:"Top Challenges (select up to 3)",
+            ch_fuel:"High fuel cost", ch_breakdown:"Frequent breakdown", ch_charging:"No nearby charging station",
+            ch_range:"Battery range anxiety", ch_repair:"Repair costs", ch_refuel:"Long refuelling time", ch_other:"Other",
+            label_ev_challenges:"EV Specific Challenges", label_petrol_challenges:"Petrol Specific Challenges",
+            evc_drain:"Battery drains too fast", evc_swap:"Swapping station too far", evc_charge:"Long charging time at home",
+            evc_power:"Vehicle not powerful enough", evc_service:"Service centre not nearby",
+            pc_price:"Fuel price too high", pc_engine:"Frequent engine issues", pc_pollution:"Pollution fine risk", pc_service:"High servicing cost",
+            label_accidental_ins:"Do you have accidental insurance?", label_health_ins:"Do you have personal health insurance?",
+            label_paid_pocket:"Have you paid out-of-pocket for an accident?",
+            opt_yes:"Yes", opt_no:"No", opt_not_sure:"Not sure",
+            label_open_ev:"Are you open to switching to an EV?",
+            ev_yes:"Yes", ev_no:"No", ev_already:"Already on EV", ev_more_info:"Need more info",
+            label_switch_triggers:"What would make you switch?",
+            st_rental:"Lower rental cost", st_range:"Better battery range", st_swap:"Swap stations nearby",
+            st_income:"Income guarantee", st_subsidy:"Employer subsidy",
+            label_interests:"Would you be interested in:",
+            int_ev:"EV Rental Offer", int_ins:"Insurance Quote", int_retrofit:"Retrofit Information", int_all:"All of the above", int_none:"None",
+            label_referred_by:"Were you referred by another rider?",
+            label_referral_code:"Referral Code of the rider who referred you",
+            ref_code_hint:"The person who shared this app with you",
+            whatsapp_hint:"After registration, you'll receive a WhatsApp confirmation with your referral code.",
+            btn_next:"Next: Vehicle Info", btn_next_c:"Next: Challenges", btn_next_d:"Next: Insurance",
+            btn_next_e:"Next: EV Openness", btn_next_f:"Next: Referral", btn_back:"Back",
+            btn_submit_reg:"Complete Registration", btn_goto_dashboard:"Go to Dashboard", btn_view_score:"View Score",
+            success_title:"Registration Complete!", success_subtitle:"Welcome to Road Warrior Pro. You start with 10 points!",
+            share_code_hint:"Share this code with other riders to earn 5 points per referral",
+            wa_confirm_title:"WhatsApp Confirmation",
+            btn_send_whatsapp:"Send WhatsApp to yourself",
+            phone_error:"Phone must be exactly 10 digits", phone_dup:"Already registered! Check your score.",
+            score_title:"Score & Leaderboard", title_score_lookup:"Check Your Score",
+            score_lookup_hint:"Enter your WhatsApp number to see your points and referral count.",
+            rank_heading:"Your Global Ranking", rank_description:"Refer friends to climb the leaderboard.",
+            active_standing:"Standings", title_leaderboard_table:"Top Performers",
+            tbl_rank:"Rank", tbl_name:"Name", tbl_city:"City", tbl_referrals:"Referrals",
+            tbl_points:"Points", tbl_tags:"Tags", tbl_deliveries:"Deliveries", tbl_rating:"Rating",
+            title_achievements:"Achievement Badges",
+            vehicles_title:"My Vehicles", title_insurance_tracker:"Insurance & Documents",
+            tbl_vehicle:"Vehicle", tbl_provider:"Insurance Provider", tbl_policy:"Policy Number", tbl_expiry:"Expiry Date", tbl_status:"Status",
+            dashboard_title:"Rider Dashboard", back:"Back",
+            stat_deliveries:"Total Deliveries", stat_earnings:"Weekly Earnings", stat_rating:"Rider Rating", stat_points:"Total Points",
+            quick_actions:"Quick Actions", act_new_delivery:"New Delivery", act_add_vehicle:"Add Vehicle",
+            act_edit_profile:"Edit Profile", act_leaderboard:"View Rankings",
+            chart_weekly_deliveries:"Weekly Deliveries", chart_weekly_earnings:"Weekly Earnings",
+            chart_delivery_types:"Delivery Types", chart_top_cities:"Top Cities",
+            title_recent_deliveries:"Recent Deliveries",
+            tbl_id:"Delivery ID", tbl_pickup:"Pickup", tbl_dropoff:"Dropoff", tbl_type:"Type", tbl_amount:"Amount", tbl_action:"Action",
+            no_deliveries:"No deliveries yet. Click New Delivery to start.",
+            profile_title:"My Profile", title_profile_info:"Basic Information", btn_save:"Save Changes",
+            title_payout_details:"Bank & Payment", label_bank:"Bank Name", label_account:"Account Number",
+            label_ifsc:"IFSC Code", label_upi:"UPI ID", btn_update_payment:"Update Bank Details",
+            title_referral:"Referral Program", label_ref_code:"Your Referral Code & Link",
+            btn_copy:"Copy", label_successful_referrals:"Referrals",
+            label_milestone_progress:"Milestone Progress",
+            m10:"10 Referrals → +100 pts", m25:"25 Referrals → +300 pts", m50:"50 Referrals → +500 pts + Lucky Draw",
+            qr_scan_hint:"Scan QR to Register instantly", qr_offline_hint:"Share at petrol pumps & delivery hubs",
+            btn_share_whatsapp:"Share via WhatsApp",
+            admin_title:"Admin Dashboard", adm_riders:"Total Riders", adm_ev_riders:"EV Riders",
+            adm_hot_leads:"Hot EV Leads", adm_ins_leads:"Insurance Leads",
+            tab_all_riders:"All Riders", tab_ev_leads:"Hot EV Leads", tab_ins_leads:"Insurance Leads",
+            tab_top_referrers:"Top Referrers", tab_city_stats:"City Stats",
+            title_riders_directory:"All Riders Registry",
+            tbl_vehicle_type:"Vehicle", tbl_phone:"Phone",
+            modal_new_delivery:"Register New Delivery", label_pickup:"Pickup Address", label_dropoff:"Dropoff Address",
+            label_delivery_type:"Delivery Type", label_fare:"Estimated Earnings (₹)",
+            btn_cancel:"Cancel", btn_create:"Register Order",
+            modal_add_vehicle:"Add New Vehicle", label_plate:"License Plate", label_color:"Color",
+            label_make:"Manufacturer", label_model:"Model Name", btn_add:"Add Vehicle",
+            btn_complete:"Complete", btn_start:"Start",
+            badge_pending:"Pending", badge_completed:"Completed",
+            no_vehicles:"No vehicles added yet. Click Add Vehicle.",
+            status_active:"Active", status_maintenance:"Maintenance", status_expiring_soon:"Expiring Soon",
+            status_unlocked:"Unlocked", status_locked:"Locked", status_offline:"Offline",
+            label_you:"You", lbl_type:"Type", lbl_color:"Color", lbl_plate:"Plate", lbl_registration:"Registration",
+            no_documents:"No insurance documents", no_riders_db:"No riders in DB",
+            ach_speed_demon_title:"Speed Demon", ach_speed_demon_desc:"Complete your first delivery",
+            ach_five_star_title:"5-Star Master", ach_five_star_desc:"Reach 50 points",
+            ach_century_title:"Century Club", ach_century_desc:"Deliver 10 parcels",
+            ach_expert_title:"Referral King", ach_expert_desc:"Refer 5 riders",
+            lang_auto_msg:"Language auto-set to English for this city",
+            label_phone:"Phone Number"
+        },
+        hi: {
+            nav_home:"होम", nav_vehicles:"वाहन", nav_dashboard:"डैशबोर्ड", nav_score:"स्कोर", nav_profile:"प्रोफ़ाइल", nav_admin:"एडमिन",
+            logout:"लॉगआउट", login:"लॉगिन", welcome_title:"अपनी डिलीवरी यात्रा को सशक्त बनाएं",
+            welcome_subtitle:"हजारों राइडर्स से जुड़ें। सर्वे पूरा करें, रेफरल कोड पाएं और पॉइंट्स जीतें!",
+            label_total_riders:"सक्रिय राइडर्स", label_start_points:"शुरुआती अंक", label_per_referral:"प्रति रेफरल",
+            milestone_10_title:"10 रेफरल", milestone_25_title:"25 रेफरल", milestone_50_title:"50 रेफरल",
+            login_title:"लॉगिन", login_alert:"demo@example.com / password उपयोग करें या नया अकाउंट बनाएं।",
+            label_email:"ईमेल", label_password:"पासवर्ड", no_account:"अकाउंट नहीं है?", register_link:"यहाँ रजिस्टर करें",
+            register_title:"राइडर रजिस्ट्रेशन", have_account:"पहले से अकाउंट है?", login_link:"यहाँ लॉगिन करें",
+            label_fullname:"पूरा नाम", label_whatsapp:"WhatsApp नंबर", label_city:"शहर", select_city:"शहर चुनें",
+            label_platform:"डिलीवरी प्लेटफ़ॉर्म", select_platform:"प्लेटफ़ॉर्म चुनें", label_exp:"अनुभव के वर्ष",
+            step_profile:"प्रोफ़ाइल", step_vehicle:"वाहन", step_challenges:"चुनौतियाँ", step_insurance:"बीमा", step_ev:"EV", step_referral:"रेफरल",
+            sec_a_title:"खंड A — मूल प्रोफ़ाइल", sec_b_title:"खंड B — वर्तमान वाहन",
+            sec_c_title:"खंड C — चुनौतियाँ", sec_d_title:"खंड D — बीमा",
+            sec_e_title:"खंड E — EV के प्रति खुलापन", sec_f_title:"खंड F — रेफरल",
+            label_vehicle_type:"वाहन का प्रकार", vt_petrol:"पेट्रोल दोपहिया", vt_diesel:"डीज़ल दोपहिया",
+            vt_electric:"इलेक्ट्रिक दोपहिया", vt_other:"अन्य",
+            label_vehicle_model:"वाहन ब्रांड और मॉडल", label_fuel_method:"आप कैसे ईंधन/चार्ज करते हैं?",
+            fm_petrol:"पेट्रोल पंप", fm_home:"घर पर चार्जिंग", fm_swap:"बैटरी स्वैप", fm_other:"अन्य",
+            label_fuel_expense:"साप्ताहिक ईंधन खर्च (₹)", label_maint_expense:"मासिक रखरखाव खर्च (₹)",
+            label_top_challenges:"मुख्य चुनौतियाँ (3 तक चुनें)",
+            ch_fuel:"ईंधन की ऊंची लागत", ch_breakdown:"बार-बार खराबी", ch_charging:"पास में चार्जिंग स्टेशन नहीं",
+            ch_range:"बैटरी रेंज की चिंता", ch_repair:"मरम्मत की लागत", ch_refuel:"लंबा ईंधन भरने का समय", ch_other:"अन्य",
+            label_ev_challenges:"EV विशेष चुनौतियाँ", label_petrol_challenges:"पेट्रोल विशेष चुनौतियाँ",
+            evc_drain:"बैटरी बहुत जल्दी खत्म होती है", evc_swap:"स्वैप स्टेशन बहुत दूर है",
+            evc_charge:"घर पर चार्जिंग में बहुत समय", evc_power:"वाहन इतना शक्तिशाली नहीं", evc_service:"सर्विस सेंटर पास नहीं",
+            pc_price:"ईंधन की कीमत बहुत ज्यादा", pc_engine:"इंजन की बार-बार समस्या", pc_pollution:"प्रदूषण जुर्माने का खतरा", pc_service:"सर्विस की उच्च लागत",
+            label_accidental_ins:"क्या आपके पास दुर्घटना बीमा है?", label_health_ins:"क्या आपके पास स्वास्थ्य बीमा है?",
+            label_paid_pocket:"क्या आपने कभी दुर्घटना का खर्च खुद उठाया?",
+            opt_yes:"हाँ", opt_no:"नहीं", opt_not_sure:"निश्चित नहीं",
+            label_open_ev:"क्या आप EV पर स्विच करने के लिए तैयार हैं?",
+            ev_yes:"हाँ", ev_no:"नहीं", ev_already:"पहले से EV पर हूँ", ev_more_info:"अधिक जानकारी चाहिए",
+            label_switch_triggers:"आप किस कारण स्विच करेंगे?",
+            st_rental:"कम किराया लागत", st_range:"बेहतर बैटरी रेंज", st_swap:"पास में स्वैप स्टेशन",
+            st_income:"आय गारंटी", st_subsidy:"नियोक्ता सब्सिडी",
+            label_interests:"आप इसमें रुचि रखते हैं:",
+            int_ev:"EV किराया ऑफर", int_ins:"बीमा कोटेशन", int_retrofit:"रेट्रोफिट जानकारी", int_all:"उपरोक्त सभी", int_none:"कोई नहीं",
+            label_referred_by:"क्या आपको किसी राइडर ने रेफर किया?",
+            label_referral_code:"जिसने आपको रेफर किया उनका कोड",
+            ref_code_hint:"जिस व्यक्ति ने यह ऐप आपसे साझा किया",
+            whatsapp_hint:"रजिस्ट्रेशन के बाद आपको WhatsApp पर पुष्टि मिलेगी।",
+            btn_next:"अगला: वाहन जानकारी", btn_next_c:"अगला: चुनौतियाँ", btn_next_d:"अगला: बीमा",
+            btn_next_e:"अगला: EV", btn_next_f:"अगला: रेफरल", btn_back:"पीछे",
+            btn_submit_reg:"रजिस्ट्रेशन पूरा करें", btn_goto_dashboard:"डैशबोर्ड जाएं", btn_view_score:"स्कोर देखें",
+            success_title:"रजिस्ट्रेशन सफल!", success_subtitle:"Road Warrior Pro में आपका स्वागत है। आप 10 अंकों से शुरू करते हैं!",
+            share_code_hint:"यह कोड अन्य राइडर्स से शेयर करें और प्रति रेफरल 5 अंक कमाएं",
+            wa_confirm_title:"WhatsApp पुष्टि",
+            btn_send_whatsapp:"खुद को WhatsApp भेजें",
+            phone_error:"फोन नंबर ठीक 10 अंकों का होना चाहिए", phone_dup:"पहले से रजिस्टर है!",
+            score_title:"स्कोर और लीडरबोर्ड", title_score_lookup:"अपना स्कोर देखें",
+            score_lookup_hint:"अपने WhatsApp नंबर से अंक और रेफरल देखें।",
+            rank_heading:"आपकी वैश्विक रैंकिंग", rank_description:"दोस्तों को रेफर करें और ऊपर चढ़ें।",
+            active_standing:"स्थान", title_leaderboard_table:"शीर्ष राइडर्स",
+            tbl_rank:"रैंक", tbl_name:"नाम", tbl_city:"शहर", tbl_referrals:"रेफरल",
+            tbl_points:"अंक", tbl_tags:"टैग", tbl_deliveries:"डिलीवरी", tbl_rating:"रेटिंग",
+            title_achievements:"उपलब्धि बैज",
+            vehicles_title:"मेरे वाहन", title_insurance_tracker:"बीमा और दस्तावेज",
+            tbl_vehicle:"वाहन", tbl_provider:"बीमा प्रदाता", tbl_policy:"पॉलिसी नंबर", tbl_expiry:"समाप्ति तिथि", tbl_status:"स्थिति",
+            dashboard_title:"राइडर डैशबोर्ड", back:"पीछे",
+            stat_deliveries:"कुल डिलीवरी", stat_earnings:"साप्ताहिक कमाई", stat_rating:"राइडर रेटिंग", stat_points:"कुल अंक",
+            quick_actions:"त्वरित कार्रवाई", act_new_delivery:"नई डिलीवरी", act_add_vehicle:"वाहन जोड़ें",
+            act_edit_profile:"प्रोफ़ाइल संपादित करें", act_leaderboard:"रैंकिंग देखें",
+            chart_weekly_deliveries:"साप्ताहिक डिलीवरी", chart_weekly_earnings:"साप्ताहिक कमाई",
+            chart_delivery_types:"डिलीवरी के प्रकार", chart_top_cities:"शीर्ष शहर",
+            title_recent_deliveries:"हालिया डिलीवरी",
+            tbl_id:"डिलीवरी आईडी", tbl_pickup:"पिकअप", tbl_dropoff:"ड्रॉप", tbl_type:"प्रकार", tbl_amount:"राशि", tbl_action:"कार्रवाई",
+            no_deliveries:"कोई डिलीवरी नहीं। नई डिलीवरी पर क्लिक करें।",
+            profile_title:"मेरी प्रोफ़ाइल", title_profile_info:"मूल जानकारी", btn_save:"बदलाव सहेजें",
+            title_payout_details:"बैंक और भुगतान", label_bank:"बैंक का नाम", label_account:"खाता संख्या",
+            label_ifsc:"IFSC कोड", label_upi:"UPI आईडी", btn_update_payment:"बैंक विवरण अपडेट करें",
+            title_referral:"रेफरल कार्यक्रम", label_ref_code:"आपका रेफरल कोड और लिंक",
+            btn_copy:"कॉपी", label_successful_referrals:"रेफरल",
+            label_milestone_progress:"माइलस्टोन प्रगति",
+            m10:"10 रेफरल → +100 अंक", m25:"25 रेफरल → +300 अंक", m50:"50 रेफरल → +500 अंक + लकी ड्रा",
+            qr_scan_hint:"QR स्कैन करके तुरंत रजिस्टर करें", qr_offline_hint:"पेट्रोल पंप पर शेयर करें",
+            btn_share_whatsapp:"WhatsApp पर शेयर करें",
+            admin_title:"एडमिन डैशबोर्ड", adm_riders:"कुल राइडर्स", adm_ev_riders:"EV राइडर्स",
+            adm_hot_leads:"हॉट EV लीड्स", adm_ins_leads:"बीमा लीड्स",
+            tab_all_riders:"सभी राइडर्स", tab_ev_leads:"हॉट EV लीड्स", tab_ins_leads:"बीमा लीड्स",
+            tab_top_referrers:"शीर्ष रेफरर्स", tab_city_stats:"शहर के आंकड़े",
+            title_riders_directory:"राइडर्स रजिस्ट्री",
+            tbl_vehicle_type:"वाहन", tbl_phone:"फ़ोन",
+            modal_new_delivery:"नई डिलीवरी दर्ज करें", label_pickup:"पिकअप का पता", label_dropoff:"ड्रॉप पता",
+            label_delivery_type:"डिलीवरी का प्रकार", label_fare:"अनुमानित कमाई (₹)",
+            btn_cancel:"रद्द करें", btn_create:"ऑर्डर दर्ज करें",
+            modal_add_vehicle:"नया वाहन जोड़ें", label_plate:"लाइसेंस प्लेट", label_color:"रंग",
+            label_make:"निर्माता", label_model:"मॉडल का नाम", btn_add:"वाहन जोड़ें",
+            btn_complete:"पूरा करें", btn_start:"शुरू करें",
+            badge_pending:"लंबित", badge_completed:"पूर्ण",
+            no_vehicles:"कोई वाहन नहीं। वाहन जोड़ें पर क्लिक करें।",
+            status_active:"सक्रिय", status_maintenance:"रखरखाव", status_expiring_soon:"जल्द समाप्त",
+            status_unlocked:"अनलॉक", status_locked:"लॉक", status_offline:"ऑफ़लाइन",
+            label_you:"आप", lbl_type:"प्रकार", lbl_color:"रंग", lbl_plate:"प्लेट", lbl_registration:"पंजीकरण",
+            no_documents:"कोई बीमा दस्तावेज़ नहीं", no_riders_db:"कोई राइडर नहीं",
+            ach_speed_demon_title:"स्पीड डेमन", ach_speed_demon_desc:"पहली डिलीवरी पूरी करें",
+            ach_five_star_title:"5-स्टार मास्टर", ach_five_star_desc:"50 अंक पाएं",
+            ach_century_title:"सेंचुरी क्लब", ach_century_desc:"10 पार्सल डिलीवर करें",
+            ach_expert_title:"रेफरल किंग", ach_expert_desc:"5 राइडर्स रेफर करें",
+            lang_auto_msg:"इस शहर के लिए भाषा हिंदी में बदली गई",
+            label_phone:"फ़ोन नंबर"
+        },
+        kn: {
+            nav_home:"ಮುಖಪುಟ", nav_vehicles:"ವಾಹನಗಳು", nav_dashboard:"ಡ್ಯಾಶ್‌ಬೋರ್ಡ್", nav_score:"ಸ್ಕೋರ್", nav_profile:"ಪ್ರೊಫೈಲ್", nav_admin:"ಅಡ್ಮಿನ್",
+            logout:"ಲಾಗ್ ಔಟ್", login:"ಲಾಗ್ ಇನ್", welcome_title:"ನಿಮ್ಮ ಡೆಲಿವರಿ ಪ್ರಯಾಣವನ್ನು ಸಶಕ್ತಗೊಳಿಸಿ",
+            welcome_subtitle:"ಸಾವಿರಾರು ರೈಡರ್‌ಗಳೊಂದಿಗೆ ಸೇರಿ. ಸಮೀಕ್ಷೆ ಪೂರ್ಣಗೊಳಿಸಿ, ರೆಫರಲ್ ಕೋಡ್ ಪಡೆಯಿರಿ ಮತ್ತು ಅಂಕಗಳನ್ನು ಗೆಲ್ಲಿರಿ!",
+            label_total_riders:"ಸಕ್ರಿಯ ರೈಡರ್ಸ್", label_start_points:"ಪ್ರಾರಂಭದ ಅಂಕಗಳು", label_per_referral:"ಪ್ರತಿ ರೆಫರಲ್",
+            milestone_10_title:"10 ರೆಫರಲ್ಗಳು", milestone_25_title:"25 ರೆಫರಲ್ಗಳು", milestone_50_title:"50 ರೆಫರಲ್ಗಳು",
+            login_title:"ಲಾಗ್ ಇನ್", login_alert:"demo@example.com / password ಬಳಸಿ ಅಥವಾ ಹೊಸ ಖಾತೆ ತೆರೆಯಿರಿ.",
+            label_email:"ಇಮೇಲ್", label_password:"ಪಾಸ್‌ವರ್ಡ್", no_account:"ಖಾತೆ ಇಲ್ಲವೇ?", register_link:"ಇಲ್ಲಿ ನೋಂದಾಯಿಸಿ",
+            register_title:"ರೈಡರ್ ನೋಂದಣಿ", have_account:"ಖಾತೆ ಇದೆಯೇ?", login_link:"ಇಲ್ಲಿ ಲಾಗ್ ಇನ್ ಆಗಿ",
+            label_fullname:"ಪೂರ್ಣ ಹೆಸರು", label_whatsapp:"WhatsApp ಸಂಖ್ಯೆ", label_city:"ನಗರ", select_city:"ನಿಮ್ಮ ನಗರ ಆಯ್ಕೆಮಾಡಿ",
+            label_platform:"ಡೆಲಿವರಿ ಪ್ಲಾಟ್‌ಫಾರ್ಮ್", select_platform:"ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಆಯ್ಕೆಮಾಡಿ", label_exp:"ಅನುಭವದ ವರ್ಷಗಳು",
+            step_profile:"ಪ್ರೊಫೈಲ್", step_vehicle:"ವಾಹನ", step_challenges:"ಸವಾಲುಗಳು", step_insurance:"ವಿಮೆ", step_ev:"EV", step_referral:"ರೆಫರಲ್",
+            sec_a_title:"ವಿಭಾಗ A — ಮೂಲ ಪ್ರೊಫೈಲ್", sec_b_title:"ವಿಭಾಗ B — ಪ್ರಸ್ತುತ ವಾಹನ",
+            sec_c_title:"ವಿಭಾಗ C — ಸವಾಲುಗಳು", sec_d_title:"ವಿಭಾಗ D — ವಿಮೆ",
+            sec_e_title:"ವಿಭಾಗ E — EV ಗೆ ಬದಲಾಗುವ ಆಸಕ್ತಿ", sec_f_title:"ವಿಭಾಗ F — ರೆಫರಲ್",
+            label_vehicle_type:"ವಾಹನದ ಪ್ರಕಾರ", vt_petrol:"ಪೆಟ್ರೋಲ್ ದ್ವಿಚಕ್ರ", vt_diesel:"ಡೀಸೆಲ್ ದ್ವಿಚಕ್ರ",
+            vt_electric:"ವಿದ್ಯುತ್ ದ್ವಿಚಕ್ರ", vt_other:"ಇತರ",
+            label_vehicle_model:"ವಾಹನ ಬ್ರ್ಯಾಂಡ್ & ಮಾದರಿ", label_fuel_method:"ನೀವು ಇಂಧನ/ಚಾರ್ಜ್ ಹೇಗೆ ಮಾಡುತ್ತೀರಿ?",
+            fm_petrol:"ಪೆಟ್ರೋಲ್ ಪಂಪ್", fm_home:"ಮನೆ ಚಾರ್ಜಿಂಗ್", fm_swap:"ಬ್ಯಾಟರಿ ಸ್ವ್ಯಾಪ್", fm_other:"ಇತರ",
+            label_fuel_expense:"ವಾರದ ಇಂಧನ ಖರ್ಚು (₹)", label_maint_expense:"ತಿಂಗಳ ನಿರ್ವಹಣೆ ಖರ್ಚು (₹)",
+            label_top_challenges:"ಮುಖ್ಯ ಸವಾಲುಗಳು (3 ವರೆಗೆ ಆಯ್ಕೆ ಮಾಡಿ)",
+            ch_fuel:"ಅಧಿಕ ಇಂಧನ ವೆಚ್ಚ", ch_breakdown:"ಪದೇ ಪದೇ ಹಾಳಾಗುವುದು", ch_charging:"ಹತ್ತಿರದಲ್ಲಿ ಚಾರ್ಜಿಂಗ್ ಸ್ಟೇಶನ್ ಇಲ್ಲ",
+            ch_range:"ಬ್ಯಾಟರಿ ರೇಂಜ್ ಆತಂಕ", ch_repair:"ದುರಸ್ತಿ ವೆಚ್ಚ", ch_refuel:"ದೀರ್ಘ ಇಂಧನ ತುಂಬಿಸುವ ಸಮಯ", ch_other:"ಇತರ",
+            label_ev_challenges:"EV ನಿರ್ದಿಷ್ಟ ಸವಾಲುಗಳು", label_petrol_challenges:"ಪೆಟ್ರೋಲ್ ನಿರ್ದಿಷ್ಟ ಸವಾಲುಗಳು",
+            evc_drain:"ಬ್ಯಾಟರಿ ತುಂಬಾ ಬೇಗ ಖಾಲಿ ಆಗುತ್ತದೆ", evc_swap:"ಸ್ವ್ಯಾಪಿಂಗ್ ಸ್ಟೇಶನ್ ತುಂಬಾ ದೂರ",
+            evc_charge:"ಮನೆ ಚಾರ್ಜಿಂಗ್‌ಗೆ ಹೆಚ್ಚು ಸಮಯ", evc_power:"ವಾಹನ ಸಾಕಷ್ಟು ಶಕ್ತಿಶಾಲಿ ಅಲ್ಲ", evc_service:"ಸರ್ವಿಸ್ ಸೆಂಟರ್ ಹತ್ತಿರ ಇಲ್ಲ",
+            pc_price:"ಇಂಧನ ಬೆಲೆ ತುಂಬಾ ಅಧಿಕ", pc_engine:"ಪದೇ ಪದೇ ಇಂಜಿನ್ ಸಮಸ್ಯೆ", pc_pollution:"ಮಾಲಿನ್ಯ ದಂಡದ ಅಪಾಯ", pc_service:"ಅಧಿಕ ಸರ್ವಿಸಿಂಗ್ ವೆಚ್ಚ",
+            label_accidental_ins:"ನಿಮಗೆ ಅಪಘಾತ ವಿಮೆ ಇದೆಯೇ?", label_health_ins:"ನಿಮಗೆ ಆರೋಗ್ಯ ವಿಮೆ ಇದೆಯೇ?",
+            label_paid_pocket:"ನೀವು ಎಂದಾದರೂ ಅಪಘಾತಕ್ಕಾಗಿ ಹಣ ಕಟ್ಟಿದ್ದೀರಾ?",
+            opt_yes:"ಹೌದು", opt_no:"ಇಲ್ಲ", opt_not_sure:"ಖಚಿತ ಇಲ್ಲ",
+            label_open_ev:"ನೀವು EV ಗೆ ಬದಲಾಗಲು ತಯಾರಿದ್ದೀರಾ?",
+            ev_yes:"ಹೌದು", ev_no:"ಇಲ್ಲ", ev_already:"ಈಗಾಗಲೇ EV ಮೇಲೆ ಇದ್ದೇನೆ", ev_more_info:"ಹೆಚ್ಚಿನ ಮಾಹಿತಿ ಬೇಕು",
+            label_switch_triggers:"ಯಾವ ಕಾರಣಕ್ಕೆ ಬದಲಾಗುತ್ತೀರಿ?",
+            st_rental:"ಕಡಿಮೆ ಬಾಡಿಗೆ ವೆಚ್ಚ", st_range:"ಉತ್ತಮ ಬ್ಯಾಟರಿ ರೇಂಜ್", st_swap:"ಹತ್ತಿರ ಸ್ವ್ಯಾಪ್ ಸ್ಟೇಶನ್",
+            st_income:"ಆದಾಯ ಖಾತ್ರಿ", st_subsidy:"ಉದ್ಯೋಗದಾತ ಸಬ್ಸಿಡಿ",
+            label_interests:"ನಿಮಗೆ ಆಸಕ್ತಿ ಇದೆಯೇ:",
+            int_ev:"EV ಬಾಡಿಗೆ ಆಫರ್", int_ins:"ವಿಮೆ ಕೋಟ್", int_retrofit:"ರೆಟ್ರೋಫಿಟ್ ಮಾಹಿತಿ", int_all:"ಮೇಲಿನ ಎಲ್ಲಾ", int_none:"ಯಾವುದೂ ಇಲ್ಲ",
+            label_referred_by:"ಯಾರಾದರೂ ರೈಡರ್ ನಿಮ್ಮನ್ನು ರೆಫರ್ ಮಾಡಿದರಾ?",
+            label_referral_code:"ನಿಮ್ಮನ್ನು ರೆಫರ್ ಮಾಡಿದ ವ್ಯಕ್ತಿಯ ಕೋಡ್",
+            ref_code_hint:"ಈ ಅಪ್ಲಿಕೇಶನ್ ಅನ್ನು ನಿಮ್ಮೊಂದಿಗೆ ಹಂಚಿದ ವ್ಯಕ್ತಿ",
+            whatsapp_hint:"ನೋಂದಣಿ ನಂತರ WhatsApp ದೃಢೀಕರಣ ಸಂದೇಶ ಬರುತ್ತದೆ.",
+            btn_next:"ಮುಂದೆ: ವಾಹನ ಮಾಹಿತಿ", btn_next_c:"ಮುಂದೆ: ಸವಾಲುಗಳು", btn_next_d:"ಮುಂದೆ: ವಿಮೆ",
+            btn_next_e:"ಮುಂದೆ: EV", btn_next_f:"ಮುಂದೆ: ರೆಫರಲ್", btn_back:"ಹಿಂದೆ",
+            btn_submit_reg:"ನೋಂದಣಿ ಪೂರ್ಣಗೊಳಿಸಿ", btn_goto_dashboard:"ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹೋಗಿ", btn_view_score:"ಸ್ಕೋರ್ ನೋಡಿ",
+            success_title:"ನೋಂದಣಿ ಯಶಸ್ವಿ!", success_subtitle:"Road Warrior Pro ಗೆ ಸ್ವಾಗತ. ನೀವು 10 ಅಂಕಗಳಿಂದ ಪ್ರಾರಂಭಿಸುತ್ತೀರಿ!",
+            share_code_hint:"ಇತರ ರೈಡರ್‌ಗಳಿಗೆ ಈ ಕೋಡ್ ಹಂಚಿ ಮತ್ತು ಪ್ರತಿ ರೆಫರಲ್‌ಗೆ 5 ಅಂಕ ಗಳಿಸಿ",
+            wa_confirm_title:"WhatsApp ದೃಢೀಕರಣ",
+            btn_send_whatsapp:"ನಿಮಗೆ WhatsApp ಕಳುಹಿಸಿ",
+            phone_error:"ಫೋನ್ ಸಂಖ್ಯೆ ನಿಖರವಾಗಿ 10 ಅಂಕಿಗಳಿರಬೇಕು", phone_dup:"ಈಗಾಗಲೇ ನೋಂದಾಯಿಸಲಾಗಿದೆ!",
+            score_title:"ಸ್ಕೋರ್ ಮತ್ತು ಲೀಡರ್‌ಬೋರ್ಡ್", title_score_lookup:"ನಿಮ್ಮ ಸ್ಕೋರ್ ಪರಿಶೀಲಿಸಿ",
+            score_lookup_hint:"ಅಂಕ ಮತ್ತು ರೆಫರಲ್ ನೋಡಲು WhatsApp ಸಂಖ್ಯೆ ನಮೂದಿಸಿ.",
+            rank_heading:"ನಿಮ್ಮ ಜಾಗತಿಕ ಶ್ರೇಯಾಂಕ", rank_description:"ಸ್ನೇಹಿತರನ್ನು ರೆಫರ್ ಮಾಡಿ ಮೇಲೇರಿ.",
+            active_standing:"ಸ್ಥಾನ", title_leaderboard_table:"ಉನ್ನತ ರೈಡರ್ಸ್",
+            tbl_rank:"ಶ್ರೇಣಿ", tbl_name:"ಹೆಸರು", tbl_city:"ನಗರ", tbl_referrals:"ರೆಫರಲ್ಗಳು",
+            tbl_points:"ಅಂಕಗಳು", tbl_tags:"ಟ್ಯಾಗ್‌ಗಳು", tbl_deliveries:"ಡೆಲಿವರಿಗಳು", tbl_rating:"ರೇಟಿಂಗ್",
+            title_achievements:"ಸಾಧನೆ ಬ್ಯಾಡ್ಜ್‌ಗಳು",
+            vehicles_title:"ನನ್ನ ವಾಹನಗಳು", title_insurance_tracker:"ವಿಮೆ ಮತ್ತು ದಾಖಲೆಗಳು",
+            tbl_vehicle:"ವಾಹನ", tbl_provider:"ವಿಮೆ ನೀಡುವವರು", tbl_policy:"ಪಾಲಿಸಿ ಸಂಖ್ಯೆ", tbl_expiry:"ಮುಕ್ತಾಯ ದಿನ", tbl_status:"ಸ್ಥಿತಿ",
+            dashboard_title:"ರೈಡರ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್", back:"ಹಿಂದೆ",
+            stat_deliveries:"ಒಟ್ಟು ಡೆಲಿವರಿ", stat_earnings:"ವಾರದ ಗಳಿಕೆ", stat_rating:"ರೈಡರ್ ರೇಟಿಂಗ್", stat_points:"ಒಟ್ಟು ಅಂಕಗಳು",
+            quick_actions:"ತ್ವರಿತ ಕ್ರಿಯೆಗಳು", act_new_delivery:"ಹೊಸ ಡೆಲಿವರಿ", act_add_vehicle:"ವಾಹನ ಸೇರಿಸಿ",
+            act_edit_profile:"ಪ್ರೊಫೈಲ್ ಸಂಪಾದಿಸಿ", act_leaderboard:"ಶ್ರೇಯಾಂಕ ನೋಡಿ",
+            chart_weekly_deliveries:"ವಾರದ ಡೆಲಿವರಿ", chart_weekly_earnings:"ವಾರದ ಗಳಿಕೆ",
+            chart_delivery_types:"ಡೆಲಿವರಿ ವಿಧಗಳು", chart_top_cities:"ಉನ್ನತ ನಗರಗಳು",
+            title_recent_deliveries:"ಇತ್ತೀಚಿನ ಡೆಲಿವರಿ",
+            tbl_id:"ಡೆಲಿವರಿ ಐಡಿ", tbl_pickup:"ಪಿಕ್ ಅಪ್", tbl_dropoff:"ಡ್ರಾಪ್", tbl_type:"ವಿಧ", tbl_amount:"ಮೊತ್ತ", tbl_action:"ಕ್ರಿಯೆ",
+            no_deliveries:"ಡೆಲಿವರಿ ಇಲ್ಲ. ಹೊಸ ಡೆಲಿವರಿ ಕ್ಲಿಕ್ ಮಾಡಿ.",
+            profile_title:"ನನ್ನ ಪ್ರೊಫೈಲ್", title_profile_info:"ಮೂಲ ಮಾಹಿತಿ", btn_save:"ಬದಲಾವಣೆ ಉಳಿಸಿ",
+            title_payout_details:"ಬ್ಯಾಂಕ್ ಮತ್ತು ಪಾವತಿ", label_bank:"ಬ್ಯಾಂಕ್ ಹೆಸರು", label_account:"ಖಾತೆ ಸಂಖ್ಯೆ",
+            label_ifsc:"IFSC ಕೋಡ್", label_upi:"UPI ಐಡಿ", btn_update_payment:"ಬ್ಯಾಂಕ್ ವಿವರ ಅಪ್‌ಡೇಟ್ ಮಾಡಿ",
+            title_referral:"ರೆಫರಲ್ ಪ್ರೋಗ್ರಾಂ", label_ref_code:"ನಿಮ್ಮ ರೆಫರಲ್ ಕೋಡ್ ಮತ್ತು ಲಿಂಕ್",
+            btn_copy:"ನಕಲಿಸಿ", label_successful_referrals:"ರೆಫರಲ್ಗಳು",
+            label_milestone_progress:"ಮೈಲ್‌ಸ್ಟೋನ್ ಪ್ರಗತಿ",
+            m10:"10 ರೆಫರಲ್ → +100 ಅಂಕ", m25:"25 ರೆಫರಲ್ → +300 ಅಂಕ", m50:"50 ರೆಫರಲ್ → +500 ಅಂಕ + ಲಕಿ ಡ್ರಾ",
+            qr_scan_hint:"QR ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ತಕ್ಷಣ ನೋಂದಣಿ ಮಾಡಿ", qr_offline_hint:"ಪೆಟ್ರೋಲ್ ಪಂಪ್‌ನಲ್ಲಿ ಹಂಚಿಕೊಳ್ಳಿ",
+            btn_share_whatsapp:"WhatsApp ನಲ್ಲಿ ಹಂಚಿ",
+            admin_title:"ಅಡ್ಮಿನ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್", adm_riders:"ಒಟ್ಟು ರೈಡರ್ಸ್", adm_ev_riders:"EV ರೈಡರ್ಸ್",
+            adm_hot_leads:"ಹಾಟ್ EV ಲೀಡ್ಸ್", adm_ins_leads:"ವಿಮೆ ಲೀಡ್ಸ್",
+            tab_all_riders:"ಎಲ್ಲ ರೈಡರ್ಸ್", tab_ev_leads:"ಹಾಟ್ EV ಲೀಡ್ಸ್", tab_ins_leads:"ವಿಮೆ ಲೀಡ್ಸ್",
+            tab_top_referrers:"ಉನ್ನತ ರೆಫರ್ರ್ಸ್", tab_city_stats:"ನಗರ ಅಂಕಿಅಂಶ",
+            title_riders_directory:"ರೈಡರ್ಸ್ ನೋಂದಣಿ",
+            tbl_vehicle_type:"ವಾಹನ", tbl_phone:"ಫೋನ್",
+            modal_new_delivery:"ಹೊಸ ಡೆಲಿವರಿ ನೋಂದಣಿ", label_pickup:"ಪಿಕ್ ಅಪ್ ವಿಳಾಸ", label_dropoff:"ಡ್ರಾಪ್ ವಿಳಾಸ",
+            label_delivery_type:"ಡೆಲಿವರಿ ವಿಧ", label_fare:"ಅಂದಾಜು ಗಳಿಕೆ (₹)",
+            btn_cancel:"ರದ್ದು", btn_create:"ಆದೇಶ ನೋಂದಿಸಿ",
+            modal_add_vehicle:"ಹೊಸ ವಾಹನ ಸೇರಿಸಿ", label_plate:"ಲೈಸೆನ್ಸ್ ಪ್ಲೇಟ್", label_color:"ಬಣ್ಣ",
+            label_make:"ತಯಾರಕ", label_model:"ಮಾದರಿ ಹೆಸರು", btn_add:"ವಾಹನ ಸೇರಿಸಿ",
+            btn_complete:"ಪೂರ್ಣಗೊಳಿಸಿ", btn_start:"ಪ್ರಾರಂಭಿಸಿ",
+            badge_pending:"ಬಾಕಿ ಇದೆ", badge_completed:"ಪೂರ್ಣ",
+            no_vehicles:"ವಾಹನ ಇಲ್ಲ. ವಾಹನ ಸೇರಿಸಿ ಕ್ಲಿಕ್ ಮಾಡಿ.",
+            status_active:"ಸಕ್ರಿಯ", status_maintenance:"ನಿರ್ವಹಣೆ", status_expiring_soon:"ಶೀಘ್ರ ಅವಧಿ ಮೀರುತ್ತದೆ",
+            status_unlocked:"ಅನ್ಲಾಕ್", status_locked:"ಲಾಕ್", status_offline:"ಆಫ್‌ಲೈನ್",
+            label_you:"ನೀವು", lbl_type:"ವಿಧ", lbl_color:"ಬಣ್ಣ", lbl_plate:"ಪ್ಲೇಟ್", lbl_registration:"ನೋಂದಣಿ",
+            no_documents:"ವಿಮೆ ದಾಖಲೆ ಇಲ್ಲ", no_riders_db:"ರೈಡರ್ಸ್ ಇಲ್ಲ",
+            ach_speed_demon_title:"ಸ್ಪೀಡ್ ಡೆಮನ್", ach_speed_demon_desc:"ಮೊದಲ ಡೆಲಿವರಿ ಪೂರ್ಣಗೊಳಿಸಿ",
+            ach_five_star_title:"5-ಸ್ಟಾರ್ ಮಾಸ್ಟರ್", ach_five_star_desc:"50 ಅಂಕ ತಲುಪಿ",
+            ach_century_title:"ಸೆಂಚುರಿ ಕ್ಲಬ್", ach_century_desc:"10 ಪಾರ್ಸೆಲ್ ತಲುಪಿಸಿ",
+            ach_expert_title:"ರೆಫರಲ್ ಕಿಂಗ್", ach_expert_desc:"5 ರೈಡರ್ಸ್ ರೆಫರ್ ಮಾಡಿ",
+            lang_auto_msg:"ಈ ನಗರಕ್ಕಾಗಿ ಭಾಷೆ ಕನ್ನಡಕ್ಕೆ ಬದಲಾಗಿದೆ",
+            label_phone:"ಫೋನ್ ಸಂಖ್ಯೆ"
+        }
+    };
+
+    // ===== APP STATE =====
+    let currentUser = null;
+    let isLoggedIn = false;
+    let activeCharts = {};
+    let currentRegStep = 1;
+    let registeredRiderId = null;
+    let adminChartsLoaded = false;
+
+    // ===== INIT =====
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCode = urlParams.get('ref');
+        if (refCode) {
+            localStorage.setItem('pendingReferralCode', refCode);
+            // Pre-fill referral code
+            const el = document.getElementById('regReferralCode');
+            if (el) el.value = refCode.toUpperCase();
+            // Auto-select "Yes" for referred
+            const yesRadio = document.querySelector('input[name="referredBy"][value="yes"]');
+            if (yesRadio) { yesRadio.checked = true; toggleReferralInput('yes'); }
+        }
+
+        const savedLang = localStorage.getItem('selectedLang') || 'en';
+        document.getElementById('langSelector').value = savedLang;
+        changeLanguage(savedLang);
+
+        loadSession();
+        window.addEventListener('popstate', handlePopState);
+        routeSPA(window.location.pathname);
+    });
+
+    // ===== LANGUAGE =====
+    function changeLanguage(lang) {
+        localStorage.setItem('selectedLang', lang);
+        document.getElementById('langSelector').value = lang;
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) {
+                const icon = el.querySelector('i');
+                if (icon) {
+                    const iconClone = icon.cloneNode(true);
+                    el.innerHTML = '';
+                    el.appendChild(iconClone);
+                    el.appendChild(document.createTextNode(' ' + TRANSLATIONS[lang][key]));
+                } else {
+                    el.textContent = TRANSLATIONS[lang][key];
+                }
+            }
+        });
+        updateAuthNavbarState();
+        if (isLoggedIn) refreshActiveView();
+    }
+
+    // Auto-detect language from city
+    function onCityChange(city) {
+        const kannadaCities = ['Bangalore', 'Mysore', 'Hubli', 'Dharwad', 'Belgaum', 'Mangalore'];
+        const hindiCities = ['Delhi', 'Lucknow', 'Jaipur', 'Agra', 'Varanasi', 'Kanpur', 'Patna'];
+
+        let detectedLang = null;
+        if (kannadaCities.includes(city)) detectedLang = 'kn';
+        else if (hindiCities.includes(city)) detectedLang = 'hi';
+
+        const hint = document.getElementById('langAutoDetect');
+        const msg = document.getElementById('langAutoMsg');
+        if (detectedLang && detectedLang !== localStorage.getItem('selectedLang')) {
+            changeLanguage(detectedLang);
+            hint.style.display = 'block';
+            msg.textContent = TRANSLATIONS[detectedLang].lang_auto_msg;
+        } else {
+            hint.style.display = 'none';
+        }
+    }
+
+    // ===== NAVIGATION =====
+    function handleNavLinkClick(event, path) { event.preventDefault(); navigateTo(path); }
+    function navigateTo(path) { if (window.location.pathname !== path) history.pushState(null, '', path); routeSPA(path); }
+    function handlePopState() { routeSPA(window.location.pathname); }
+
+    function routeSPA(path) {
+        let activeTab = 'home';
+        if (path === '/vehicles') activeTab = 'vehicles';
+        else if (path === '/dashboard') activeTab = 'dashboard';
+        else if (path === '/score') activeTab = 'score';
+        else if (path === '/profile') activeTab = 'profile';
+        else if (path === '/admin') activeTab = 'admin';
+
+        // Score page is public — no login check
+        if (activeTab !== 'home' && activeTab !== 'score' && !isLoggedIn) {
+            showToast('Please login or register first.', 'warning');
+            navigateTo('/home'); return;
+        }
+
+        document.querySelectorAll('.section-view').forEach(v => v.classList.remove('active'));
+        const av = document.getElementById(`${activeTab}-view`);
+        if (av) av.classList.add('active');
+
+        document.querySelectorAll('.navbar-nav .nav-link').forEach(l => l.classList.remove('active'));
+        const al = document.getElementById(`nav${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`);
+        if (al) al.classList.add('active');
+        else if (activeTab === 'home') { const fl = document.getElementById('navHome'); if (fl) fl.classList.add('active'); }
+
+        if (activeTab === 'dashboard') loadDashboardData();
+        else if (activeTab === 'vehicles') loadVehiclesData();
+        else if (activeTab === 'score') loadLeaderboardData();
+        else if (activeTab === 'profile') loadProfileData();
+        else if (activeTab === 'admin') loadAdminData();
+    }
+
+    function refreshActiveView() {
+        const path = window.location.pathname;
+        let tab = 'home';
+        if (path === '/vehicles') tab = 'vehicles';
+        else if (path === '/dashboard') tab = 'dashboard';
+        else if (path === '/score') tab = 'score';
+        else if (path === '/profile') tab = 'profile';
+        else if (path === '/admin') tab = 'admin';
+        if (tab === 'dashboard') loadDashboardData();
+        else if (tab === 'vehicles') loadVehiclesData();
+        else if (tab === 'score') loadLeaderboardData();
+        else if (tab === 'profile') loadProfileData();
+        else if (tab === 'admin') loadAdminData();
+    }
+
+    // ===== SESSION =====
+    function loadSession() {
+        const riderId = localStorage.getItem('riderId');
+        if (riderId) fetchRiderProfile(riderId);
+    }
+
+    function fetchRiderProfile(riderId) {
+        fetch(`/api/riders/${riderId}`).then(r => r.json()).then(result => {
+            if (result.success) {
+                currentUser = result.data; isLoggedIn = true;
+                updateAuthNavbarState();
+                if (window.location.pathname === '/' || window.location.pathname === '/home') navigateTo('/dashboard');
+            } else logoutUser();
+        }).catch(() => logoutUser());
+    }
+
+    function updateAuthNavbarState() {
+        const btn = document.getElementById('loginLogoutBtn');
+        const lang = localStorage.getItem('selectedLang') || 'en';
+        if (isLoggedIn) {
+            btn.innerHTML = `<i class="fas fa-sign-out-alt"></i> <span>${TRANSLATIONS[lang].logout}</span>`;
+            btn.classList.replace('btn-primary', 'btn-secondary');
+        } else {
+            btn.innerHTML = `<i class="fas fa-sign-in-alt"></i> <span>${TRANSLATIONS[lang].login}</span>`;
+            btn.classList.replace('btn-secondary', 'btn-primary');
+        }
+    }
+
+    function toggleAuth() { isLoggedIn ? logoutUser() : navigateTo('/home'); }
+
+    function logoutUser() {
+        fetch('/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: localStorage.getItem('sessionId') }) })
+        .finally(() => {
+            localStorage.removeItem('riderId'); localStorage.removeItem('sessionId');
+            currentUser = null; isLoggedIn = false;
+            updateAuthNavbarState(); navigateTo('/home');
+        });
+    }
+
+    // ===== AUTH FORMS =====
+    function toggleAuthCards(e) {
+        if (e) e.preventDefault();
+        const login = document.getElementById('loginCard');
+        const reg = document.getElementById('registerCard');
+        const switchLink = document.getElementById('loginSwitchLink');
+        if (login.style.display === 'none') {
+            login.style.display = 'block'; reg.style.display = 'none';
+            if (switchLink) switchLink.style.display = 'block';
+        } else {
+            login.style.display = 'none'; reg.style.display = 'block';
+        }
+    }
+
+    function handleLogin(e) {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) })
+        .then(r => r.json()).then(result => {
+            if (result.success) {
+                localStorage.setItem('riderId', result.riderId);
+                localStorage.setItem('sessionId', result.sessionId);
+                fetchRiderProfile(result.riderId);
+            } else showToast('Login failed: ' + (result.error || 'Invalid email/password'), 'error');
+        }).catch(err => showToast('Network error: ' + err.message, 'error'));
+    }
+
+    // ===== MULTI-STEP REGISTRATION =====
+    function gotoStep(step) {
+        if (step > 1 && step === 2) {
+            // Validate section A
+            const name = document.getElementById('regFullName').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+            const city = document.getElementById('regCity').value;
+            const platform = document.getElementById('regPlatform').value;
+            const exp = document.getElementById('regExp').value;
+            const pass = document.getElementById('regPassword').value;
+            if (!name) { showToast('Please enter your full name', 'error'); return; }
+            if (phone.length !== 10) { showToast('Phone must be 10 digits', 'error'); return; }
+            if (!city) { showToast('Please select your city', 'error'); return; }
+            if (!platform) { showToast('Please select your delivery platform', 'error'); return; }
+            if (exp === '') { showToast('Please select your experience', 'error'); return; }
+            if (!pass) { showToast('Please set a password', 'error'); return; }
+        }
+
+        document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+        document.getElementById(`regSection${step}`).classList.add('active');
+
+        for (let i = 1; i <= 6; i++) {
+            const ind = document.getElementById(`step-indicator-${i}`);
+            if (!ind) continue;
+            ind.classList.remove('active', 'done');
+            if (i < step) ind.classList.add('done');
+            else if (i === step) ind.classList.add('active');
+        }
+        currentRegStep = step;
+    }
+
+    function validateRegPhone(input) {
+        const clean = input.value.replace(/\D/g, '').slice(0, 10);
+        input.value = clean;
+        const icon = document.getElementById('phoneValIcon');
+        const check = document.getElementById('phoneCheckIcon');
+        const cross = document.getElementById('phoneCrossIcon');
+        const err = document.getElementById('phoneErrMsg');
+        const dup = document.getElementById('dupPhoneMsg');
+        dup.classList.add('hidden');
+        if (clean.length === 0) { icon.style.display = 'none'; err.classList.add('hidden'); return; }
+        if (clean.length === 10) {
+            icon.style.display = 'inline-block'; check.style.display = 'inline-block'; cross.style.display = 'none';
+            err.classList.add('hidden');
+            // Check for duplicate
+            fetch(`/api/riders/check-phone/${clean}`).then(r => r.json()).then(res => {
+                if (res.exists) { dup.classList.remove('hidden'); check.style.display = 'none'; cross.style.display = 'inline-block'; }
+            }).catch(() => {});
+        } else {
+            icon.style.display = 'inline-block'; check.style.display = 'none'; cross.style.display = 'inline-block';
+            err.classList.remove('hidden');
+        }
+    }
+
+    function onVehicleTypeChange(value) {
+        const evSec = document.getElementById('evChallengesSection');
+        const petrolSec = document.getElementById('petrolChallengesSection');
+        const isEV = value.toLowerCase().includes('electric');
+        const isPetrol = value.toLowerCase().includes('petrol') || value.toLowerCase().includes('diesel');
+        evSec.classList.toggle('hidden-section', !isEV);
+        evSec.classList.toggle('visible-section', isEV);
+        petrolSec.classList.toggle('hidden-section', !isPetrol);
+        petrolSec.classList.toggle('visible-section', isPetrol);
+    }
+
+    function toggleReferralInput(val) {
+        const sec = document.getElementById('referralCodeInputSection');
+        if (val === 'yes') { sec.classList.remove('hidden-section'); sec.classList.add('visible-section'); }
+        else { sec.classList.add('hidden-section'); sec.classList.remove('visible-section'); }
+    }
+
+    function getCheckedValues(name) {
+        return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(i => i.value);
+    }
+
+    function getRadioValue(name) {
+        const el = document.querySelector(`input[name="${name}"]:checked`);
+        return el ? el.value : '';
+    }
+
+    function submitRegistration() {
+        const btn = document.getElementById('submitRegBtn');
+        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+
+        const lang = localStorage.getItem('selectedLang') || 'en';
+        const referredBy = getRadioValue('referredBy');
+        const referredByCode = referredBy === 'yes' ? document.getElementById('regReferralCode').value.trim().toUpperCase() : (localStorage.getItem('pendingReferralCode') || null);
+
+        const payload = {
+            fullName: document.getElementById('regFullName').value.trim(),
+            phone: document.getElementById('regPhone').value.trim(),
+            city: document.getElementById('regCity').value,
+            deliveryPlatform: document.getElementById('regPlatform').value,
+            experienceYears: document.getElementById('regExp').value,
+            email: document.getElementById('regEmail').value.trim() || null,
+            password: document.getElementById('regPassword').value,
+            vehicleType: getRadioValue('vehicleType'),
+            vehicleModel: document.getElementById('regVehicleModel').value.trim(),
+            fuelMethod: getRadioValue('fuelMethod'),
+            fuelExpenseWeekly: document.getElementById('regFuelExp').value,
+            maintenanceExpenseMonthly: document.getElementById('regMaintExp').value,
+            challenges: getCheckedValues('challenges'),
+            evChallenges: getCheckedValues('evChallenges'),
+            petrolChallenges: getCheckedValues('petrolChallenges'),
+            hasAccidentalInsurance: getRadioValue('hasAccidental'),
+            hasHealthInsurance: getRadioValue('hasHealth'),
+            paidOutofPocketAccident: getRadioValue('paidPocket'),
+            openToEV: getRadioValue('openEV'),
+            switchTriggers: getCheckedValues('switchTriggers'),
+            interests: getRadioValue('interests'),
+            referredByCode,
+            language: lang
+        };
+
+        fetch('/api/riders/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(r => r.json())
+        .then(result => {
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Complete Registration';
+            if (result.success) {
+                localStorage.setItem('riderId', result.data.riderId);
+                localStorage.setItem('sessionId', result.sessionId);
+                localStorage.removeItem('pendingReferralCode');
+                currentUser = result.data.rider;
+                registeredRiderId = result.data.riderId;
+
+                // Show success
+                document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+                document.getElementById('regSuccessPanel').classList.add('active');
+                document.getElementById('loginSwitchLink').style.display = 'none';
+
+                // Update success UI
+                document.getElementById('successReferralCode').textContent = result.referralCode;
+                document.getElementById('whatsappMsgPreview').textContent = result.whatsappMessage;
+
+                const waLink = `https://api.whatsapp.com/send?phone=${payload.phone}&text=${encodeURIComponent(result.whatsappMessage)}`;
+                document.getElementById('whatsappSendLink').href = waLink;
+
+                showToast('🎉 Registration successful! Welcome to Road Warrior Pro!', 'success');
+            } else {
+                showToast('Registration failed: ' + result.error, 'error');
+            }
+        }).catch(err => {
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Complete Registration';
+            showToast('Network error: ' + err.message, 'error');
+        });
+    }
+
+    function loginAfterRegister() {
+        if (registeredRiderId) {
+            isLoggedIn = true;
+            updateAuthNavbarState();
+            navigateTo('/dashboard');
+        }
+    }
+
+    // ===== SCORE LOOKUP (public) =====
+    function lookupScore() {
+        const phone = document.getElementById('scoreLookupPhone').value.trim();
+        if (phone.length !== 10) { showToast('Enter a valid 10-digit phone number', 'error'); return; }
+        const result = document.getElementById('scoreLookupResult');
+        result.style.display = 'block';
+        result.innerHTML = '<div style="text-align:center; padding:1rem;"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem; color:var(--primary-color);"></i></div>';
+
+        fetch(`/api/riders/by-phone/${phone}`).then(r => r.json()).then(res => {
+            if (res.success) {
+                const rider = res.data;
+                const refs = rider.referrals || 0;
+                const pts = rider.totalPoints || 0;
+                const code = rider.referralCode || 'N/A';
+                const tags = (rider.tags || []).map(t => `<span class="tag-pill ${getTagClass(t)}">${t}</span>`).join('');
+                const refLink = `${window.location.origin}/?ref=${code}`;
+                const waMsg = `Hi! My Road Warrior referral code is ${code}. Register here: ${refLink} and earn points!`;
+                result.innerHTML = `
+                    <div class="score-display">
+                        <div style="font-size:0.875rem; color:var(--text-secondary); margin-bottom:0.5rem;">Welcome back, <strong>${rider.fullName}</strong>! 🎉</div>
+                        <div class="score-big">${pts}</div>
+                        <div style="font-size:0.875rem; color:var(--text-secondary); margin-bottom:1rem;">Total Points</div>
+                        <div style="display:flex; gap:1rem; justify-content:center; margin-bottom:1rem;">
+                            <div class="stat-box" style="padding:0.75rem 1.5rem; flex:1; text-align:center;"><div style="font-size:1.5rem; font-weight:800; color:var(--primary-color);">${refs}</div><div style="font-size:0.75rem; color:var(--text-secondary);">Referrals</div></div>
+                            <div class="stat-box" style="padding:0.75rem 1.5rem; flex:1; text-align:center;"><div style="font-size:1.5rem; font-weight:800; color:var(--secondary-color);">${rider.city}</div><div style="font-size:0.75rem; color:var(--text-secondary);">City</div></div>
+                        </div>
+                        <div class="referral-code-badge" style="margin:0 auto; display:inline-flex;">🎫 ${code}</div>
+                        <div style="margin-top:0.75rem;">${tags}</div>
+                        <a href="https://api.whatsapp.com/send?text=${encodeURIComponent(waMsg)}" target="_blank" class="btn btn-success w-100" style="background:#25D366; border-color:#25D366; margin-top:1rem;">
+                            <i class="fab fa-whatsapp"></i> Share my referral code
+                        </a>
+                    </div>`;
+            } else {
+                result.innerHTML = `<div class="alert" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:var(--border-radius-sm); padding:1rem; color:#ef4444;"><i class="fas fa-exclamation-circle"></i> ${res.error || 'Rider not found with this phone number.'}</div>`;
+            }
+        }).catch(() => {
+            result.innerHTML = `<div class="alert" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:var(--border-radius-sm); padding:1rem; color:#ef4444;">Connection error. Please try again.</div>`;
+        });
+    }
+
+    function getTagClass(tag) {
+        if (tag.includes('Hot EV') || tag.includes('EV Lead')) return 'tag-hot-ev';
+        if (tag.includes('Insurance')) return 'tag-insurance';
+        if (tag.includes('Retrofit')) return 'tag-retrofit';
+        if (tag.includes('Petrol')) return 'tag-petrol';
+        if (tag.includes('EV Rider')) return 'tag-ev';
+        if (tag.includes('Swing')) return 'tag-swing';
+        return 'tag-swing';
+    }
+
+    // ===== LEADERBOARD =====
+    function loadLeaderboardData() {
+        fetch('/api/leaderboard').then(r => r.json()).then(result => {
+            if (result.success) renderLeaderboardTable(result.data);
+        });
+    }
+
+    function renderLeaderboardTable(riders) {
+        const tbody = document.getElementById('leaderboardTableBody');
+        const lang = localStorage.getItem('selectedLang') || 'en';
+        let userRank = '--';
+        if (currentUser) {
+            const idx = riders.findIndex(r => r.id === currentUser.id);
+            if (idx !== -1) userRank = idx + 1;
+        }
+        document.getElementById('userRankValue').textContent = userRank;
+        tbody.innerHTML = riders.map((r, idx) => {
+            const rn = idx + 1;
+            const medal = rn === 1 ? '🥇' : rn === 2 ? '🥈' : rn === 3 ? '🥉' : rn;
+            const isSelf = currentUser && r.id === currentUser.id;
+            const rowStyle = isSelf ? `style="background:rgba(59,130,246,0.12); font-weight:bold; border-left:3px solid var(--primary-color);"` : '';
+            const tags = (r.tags || []).map(t => `<span class="tag-pill ${getTagClass(t)}">${t}</span>`).join('');
+            return `<tr ${rowStyle}><td>${medal}</td><td>${r.fullName}${isSelf ? ` <strong>(${TRANSLATIONS[lang].label_you})</strong>` : ''}</td><td>${r.city}</td><td style="color:var(--secondary-color); font-weight:700;">${r.referrals || 0}</td><td style="color:var(--primary-color); font-weight:700;">${r.totalPoints}</td><td>${tags || '—'}</td></tr>`;
+        }).join('');
+        renderAchievementsGrid();
+    }
+
+    function renderAchievementsGrid() {
+        const grid = document.getElementById('achievementsGrid');
+        if (!grid) return;
+        const lang = localStorage.getItem('selectedLang') || 'en';
+        const pts = currentUser ? (currentUser.totalPoints || 0) : 0;
+        const del = currentUser ? (currentUser.totalDeliveries || 0) : 0;
+        const refs = currentUser ? (currentUser.referrals || 0) : 0;
+        const achievements = [
+            { title: TRANSLATIONS[lang].ach_speed_demon_title, icon: '🚀', desc: TRANSLATIONS[lang].ach_speed_demon_desc, unlocked: del >= 1 },
+            { title: TRANSLATIONS[lang].ach_five_star_title, icon: '⭐', desc: TRANSLATIONS[lang].ach_five_star_desc, unlocked: pts >= 50 },
+            { title: TRANSLATIONS[lang].ach_century_title, icon: '💯', desc: TRANSLATIONS[lang].ach_century_desc, unlocked: del >= 10 },
+            { title: TRANSLATIONS[lang].ach_expert_title, icon: '🌟', desc: TRANSLATIONS[lang].ach_expert_desc, unlocked: refs >= 5 }
+        ];
+        grid.innerHTML = achievements.map(a => `
+            <div style="text-align:center; padding:1.5rem 1rem; border:1px solid var(--card-border); border-radius:var(--border-radius-md); background:rgba(255,255,255,0.01); ${a.unlocked ? '' : 'filter:grayscale(0.8); opacity:0.5;'}">
+                <div style="font-size:2.5rem; margin-bottom:0.5rem;">${a.icon}</div>
+                <h4 style="font-family:'Outfit'; font-size:0.95rem; margin-bottom:0.25rem;">${a.title}</h4>
+                <p style="font-size:0.75rem; color:var(--text-secondary);">${a.desc}</p>
+                <span class="badge ${a.unlocked ? 'badge-success' : 'badge-warning'}" style="font-size:0.65rem;">${a.unlocked ? TRANSLATIONS[lang].status_unlocked : TRANSLATIONS[lang].status_locked}</span>
+            </div>`).join('');
+    }
+
+    // ===== DASHBOARD =====
+    function loadDashboardData() {
+        if (!currentUser) return;
+        fetch(`/api/stats/${currentUser.id}`).then(r => r.json()).then(result => {
+            if (result.success) {
+                const s = result.data;
+                document.getElementById('totalDeliveries').textContent = s.totalDeliveries;
+                document.getElementById('totalEarnings').textContent = `₹${s.totalEarnings}`;
+                document.getElementById('riderRating').textContent = s.averageRating;
+                document.getElementById('totalPoints').textContent = s.totalPoints;
+                currentUser.totalPoints = s.totalPoints;
+                currentUser.totalDeliveries = s.totalDeliveries;
+            }
+        });
+        fetch(`/api/riders/${currentUser.id}/deliveries`).then(r => r.json()).then(result => {
+            if (result.success) renderDeliveriesTable(result.data);
+        });
+        loadDashboardCharts();
+    }
+
+    function renderDeliveriesTable(deliveries) {
+        const tbody = document.getElementById('deliveriesTableBody');
+        const lang = localStorage.getItem('selectedLang') || 'en';
+        if (deliveries.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">${TRANSLATIONS[lang].no_deliveries}</td></tr>`; return; }
+        tbody.innerHTML = deliveries.map(d => {
+            const statusBadge = d.status === 'completed' ? `<span class="badge badge-success">${TRANSLATIONS[lang].badge_completed}</span>` : `<span class="badge badge-warning">${TRANSLATIONS[lang].badge_pending}</span>`;
+            const action = d.status === 'pending' ? `<button class="btn btn-success btn-small" onclick="completeDelivery('${d.id}')"><i class="fas fa-check"></i> ${TRANSLATIONS[lang].btn_complete}</button>` : `<span>—</span>`;
+            return `<tr><td><strong>${d.id.substring(0,8)}...</strong></td><td>${d.pickupLocation}</td><td>${d.dropoffLocation}</td><td><span class="badge badge-primary">${d.deliveryType}</span></td><td>₹${d.amount}</td><td>${statusBadge}</td><td>${action}</td></tr>`;
+        }).join('');
+    }
+
+    function completeDelivery(id) {
+        fetch(`/api/deliveries/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'completed', rating: Math.floor(Math.random() * 2) + 4 }) })
+        .then(r => r.json()).then(result => { if (result.success) { showToast('Delivery completed! Points added.', 'success'); loadDashboardData(); } });
+    }
+
+    function handleCreateDelivery(e) {
+        e.preventDefault();
+        fetch('/api/deliveries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ riderId: currentUser.id, pickupLocation: document.getElementById('pickupLocation').value, dropoffLocation: document.getElementById('dropoffLocation').value, deliveryType: document.getElementById('deliveryType').value, amount: parseFloat(document.getElementById('deliveryAmount').value) }) })
+        .then(r => r.json()).then(result => { if (result.success) { closeModal('deliveryModal'); document.getElementById('deliveryForm').reset(); showToast('Delivery created!', 'success'); loadDashboardData(); } });
+    }
+
+    function loadDashboardCharts() {
+        Object.keys(activeCharts).forEach(k => { if (activeCharts[k]) { activeCharts[k].destroy(); delete activeCharts[k]; } });
+        const lang = localStorage.getItem('selectedLang') || 'en';
+
+        fetch(`/dashboard/analytics/${currentUser.id}`).then(r => r.json()).then(result => {
+            if (result.success) {
+                const data = result.data;
+                const delCtx = document.getElementById('deliveriesChart');
+                if (delCtx) activeCharts.deliveries = new Chart(delCtx.getContext('2d'), { type: 'bar', data: { labels: data.weeklyData.map(d => d.day), datasets: [{ label: TRANSLATIONS[lang].chart_weekly_deliveries, data: data.weeklyData.map(d => d.deliveries), backgroundColor: 'rgba(59,130,246,0.65)', borderColor: 'rgba(59,130,246,1)', borderWidth: 1.5, borderRadius: 6 }] }, options: getChartOpts(false) });
+                const earnCtx = document.getElementById('earningsChart');
+                if (earnCtx) activeCharts.earnings = new Chart(earnCtx.getContext('2d'), { type: 'line', data: { labels: data.weeklyData.map(d => d.day), datasets: [{ label: TRANSLATIONS[lang].chart_weekly_earnings, data: data.weeklyData.map(d => d.earnings), borderColor: 'rgba(16,185,129,1)', backgroundColor: 'rgba(16,185,129,0.08)', borderWidth: 3, tension: 0.35, fill: true }] }, options: getChartOpts(true) });
+            }
+        });
+
+        fetch(`/api/riders/${currentUser.id}/deliveries`).then(r => r.json()).then(result => {
+            if (result.success) {
+                const counts = { food: 0, parcel: 0, document: 0, other: 0 };
+                result.data.forEach(d => { if (counts[d.deliveryType] !== undefined) counts[d.deliveryType]++; });
+                const typeCtx = document.getElementById('deliveryTypesChart');
+                if (typeCtx) activeCharts.types = new Chart(typeCtx.getContext('2d'), { type: 'doughnut', data: { labels: Object.keys(counts).map(k => k.toUpperCase()), datasets: [{ data: Object.values(counts), backgroundColor: ['rgba(59,130,246,0.75)', 'rgba(249,115,22,0.75)', 'rgba(16,185,129,0.75)', 'rgba(6,182,212,0.75)'], borderColor: '#161e31', borderWidth: 2 }] }, options: { responsive: true, plugins: { legend: { labels: { color: '#f3f4f6' } } } } });
+            }
+        });
+
+        fetch('/dashboard/city-analytics').then(r => r.json()).then(result => {
+            if (result.success) {
+                const cityCtx = document.getElementById('citiesChart');
+                if (cityCtx) activeCharts.cities = new Chart(cityCtx.getContext('2d'), { type: 'bar', data: { labels: result.data.map(c => c.name), datasets: [{ data: result.data.map(c => c.deliveries), backgroundColor: 'rgba(249,115,22,0.65)', borderColor: 'rgba(249,115,22,1)', borderWidth: 1.5, borderRadius: 6 }] }, options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } }, y: { grid: { display: false }, ticks: { color: '#9ca3af' } } } } });
+            }
+        });
+    }
+
+    function getChartOpts(legend) {
+        return { responsive: true, plugins: { legend: { display: legend, labels: { color: '#f3f4f6' } } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af' } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } } } };
+    }
+
+    // ===== VEHICLES =====
+    function loadVehiclesData() {
+        if (!currentUser) return;
+        fetch(`/api/riders/${currentUser.id}/vehicles`).then(r => r.json()).then(result => {
+            if (result.success) { renderVehiclesGrid(result.data); renderInsuranceTable(result.data); }
+        });
+    }
+
+    function renderVehiclesGrid(vehicles) {
+        const grid = document.getElementById('vehiclesGrid');
+        const lang = localStorage.getItem('selectedLang') || 'en';
+        if (!vehicles.length) { grid.innerHTML = `<div class="card" style="grid-column:1/-1; text-align:center; padding:3rem;"><p class="text-muted">${TRANSLATIONS[lang].no_vehicles}</p></div>`; return; }
+        grid.innerHTML = vehicles.map(v => {
+            const sc = v.status === 'active' ? 'badge-success' : 'badge-warning';
+            const sl = v.status === 'active' ? TRANSLATIONS[lang].status_active : TRANSLATIONS[lang].status_maintenance;
+            return `<div class="card"><div class="card-header"><h3 class="card-title"><i class="fas fa-motorcycle text-primary-color"></i> ${v.make} ${v.model}</h3><span class="badge ${sc}">${sl}</span></div><div class="card-body"><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; font-size:0.875rem;"><div><strong>${TRANSLATIONS[lang].lbl_type}:</strong> ${v.vehicleType}</div><div><strong>${TRANSLATIONS[lang].lbl_color}:</strong> ${v.color}</div><div style="grid-column:1/-1;"><strong>${TRANSLATIONS[lang].lbl_plate}:</strong> ${v.licensePlate}</div><div style="grid-column:1/-1;"><strong>${TRANSLATIONS[lang].lbl_registration}:</strong> ${new Date(v.registrationDate).toLocaleDateString()}</div></div></div></div>`;
+        }).join('');
+    }
+
+    function renderInsuranceTable(vehicles) {
+        const tbody = document.getElementById('insuranceTableBody');
+        const lang = localStorage.getItem('selectedLang') || 'en';
+        if (!vehicles.length) { tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${TRANSLATIONS[lang].no_documents}</td></tr>`; return; }
+        tbody.innerHTML = vehicles.map(v => {
+            const ins = v.insurance || {};
+            const expDate = ins.expiryDate ? new Date(ins.expiryDate) : new Date(Date.now() + 180 * 24 * 60 * 60 * 1000);
+            const expiring = (expDate - Date.now()) < (30 * 24 * 60 * 60 * 1000);
+            const sc = expiring ? 'badge-danger' : 'badge-success';
+            const sl = expiring ? TRANSLATIONS[lang].status_expiring_soon : TRANSLATIONS[lang].status_active;
+            return `<tr><td><strong>${v.make} ${v.model}</strong></td><td>${ins.provider || 'ICICI Lombard'}</td><td>${ins.policyNumber || `POL-2026-${v.id.substring(0,5).toUpperCase()}`}</td><td>${expDate.toLocaleDateString()}</td><td><span class="badge ${sc}">${sl}</span></td></tr>`;
+        }).join('');
+    }
+
+    function handleAddVehicle(e) {
+        e.preventDefault();
+        fetch('/api/vehicles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ riderId: currentUser.id, vehicleType: document.getElementById('vehicleType').value, licensePlate: document.getElementById('licensePlate').value, color: document.getElementById('vehicleColor').value, make: document.getElementById('vehicleMake').value, model: document.getElementById('vehicleModel').value }) })
+        .then(r => r.json()).then(result => { if (result.success) { closeModal('vehicleModal'); document.getElementById('vehicleForm').reset(); showToast('Vehicle added!', 'success'); loadVehiclesData(); } });
+    }
+
+    // ===== PROFILE & QR CODE =====
+    function loadProfileData() {
+        if (!currentUser) return;
+        document.getElementById('profileName').value = currentUser.fullName || '';
+        document.getElementById('profileEmail').value = currentUser.email || '';
+        document.getElementById('profilePhone').value = currentUser.phone || '';
+        document.getElementById('profileCity').value = currentUser.city || '';
+
+        const code = currentUser.referralCode || 'RW-XXXX';
+        const refLink = `${window.location.origin}/?ref=${code}`;
+
+        document.getElementById('referralCodeDisplay').textContent = code;
+        document.getElementById('referralLinkInput').value = refLink;
+        document.getElementById('referralCount').textContent = currentUser.referrals || 0;
+        document.getElementById('profileTotalPoints').textContent = currentUser.totalPoints || 0;
+
+        // Milestone progress bars
+        const refs = currentUser.referrals || 0;
+        document.getElementById('m10Progress').textContent = `${Math.min(refs, 10)}/10`;
+        document.getElementById('m10Bar').style.width = `${Math.min(refs / 10 * 100, 100)}%`;
+        document.getElementById('m25Progress').textContent = `${Math.min(refs, 25)}/25`;
+        document.getElementById('m25Bar').style.width = `${Math.min(refs / 25 * 100, 100)}%`;
+        document.getElementById('m50Progress').textContent = `${Math.min(refs, 50)}/50`;
+        document.getElementById('m50Bar').style.width = `${Math.min(refs / 50 * 100, 100)}%`;
+
+        // Generate QR Code
+        const qrContainer = document.getElementById('qrCodeContainer');
+        qrContainer.innerHTML = '';
+        try {
+            new QRCode(qrContainer, { text: refLink, width: 130, height: 130, colorDark: '#0a0f1e', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
+        } catch(e) {
+            qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(refLink)}&color=0a0f1e&bgcolor=ffffff" alt="QR Code" style="width:130px; height:130px;">`;
+        }
+    }
+
+    function updateProfileInfo(e) {
+        e.preventDefault();
+        const phone = document.getElementById('profilePhone').value;
+        if (phone.length !== 10) { showToast('Phone must be 10 digits', 'error'); return; }
+        fetch(`/api/riders/${currentUser.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName: document.getElementById('profileName').value, phone, city: document.getElementById('profileCity').value }) })
+        .then(r => r.json()).then(result => { if (result.success) { currentUser = result.data; showToast('Profile updated!', 'success'); loadProfileData(); } });
+    }
+
+    function updatePaymentDetails(e) { e.preventDefault(); showToast('Bank details updated!', 'success'); }
+
+    function copyReferralCode() {
+        const code = currentUser ? currentUser.referralCode : '';
+        const refLink = `${window.location.origin}/?ref=${code}`;
+        navigator.clipboard.writeText(refLink).then(() => showToast('Referral link copied!', 'success')).catch(() => {
+            const inp = document.getElementById('referralLinkInput'); inp.select(); document.execCommand('copy'); showToast('Copied!', 'success');
+        });
+    }
+
+    function shareToWhatsApp() {
+        if (!currentUser) return;
+        const code = currentUser.referralCode || 'RWPRO';
+        const refLink = `${window.location.origin}/?ref=${code}`;
+        const lang = localStorage.getItem('selectedLang') || 'en';
+        let msg;
+        if (lang === 'hi') msg = `🚀 *Road Warrior Pro* - Mujhe join karo!\n\nMera referral code use karo aur register karo:\n🔗 ${refLink}\n\nCode: *${code}*\n\nDono ko milenge points! 🏆`;
+        else if (lang === 'kn') msg = `🚀 *Road Warrior Pro* - Nannanu join madi!\n\nNanna referral code balisि register madi:\n🔗 ${refLink}\n\nCode: *${code}*\n\nIddaru points gaListevi! 🏆`;
+        else msg = `🚀 *Road Warrior Pro* - Join my delivery team!\n\nUse my referral link:\n🔗 ${refLink}\n\nCode: *${code}*\n\nWe both earn points! 🏆`;
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    // ===== ADMIN =====
+    let currentAdminTab = 'allRiders';
+    function switchAdminTab(tab) {
+        currentAdminTab = tab;
+        document.querySelectorAll('.admin-tab').forEach((t, i) => {
+            const tabs = ['allRiders', 'evLeads', 'insLeads', 'topReferrers', 'cityStats'];
+            t.classList.toggle('active', tabs[i] === tab);
+        });
+        document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+        const panel = document.getElementById(`panel-${tab}`);
+        if (panel) panel.classList.add('active');
+        if (tab === 'evLeads') loadEVLeads();
+        else if (tab === 'insLeads') loadInsLeads();
+        else if (tab === 'topReferrers') loadTopReferrers();
+        else if (tab === 'cityStats') loadCityStats();
+    }
+
+    function loadAdminData() {
+        fetch('/dashboard/system-stats').then(r => r.json()).then(result => {
+            if (result.success) {
+                const s = result.data;
+                document.getElementById('adminTotalRiders').textContent = s.totalRiders;
+            }
+        });
+        fetch('/api/admin/riders').then(r => r.json()).then(result => {
+            if (result.success) {
+                const riders = result.data;
+                document.getElementById('adminTotalRiders').textContent = riders.length;
+                document.getElementById('adminEVRiders').textContent = riders.filter(r => (r.tags || []).includes('EV Rider')).length;
+                document.getElementById('adminHotLeads').textContent = riders.filter(r => (r.tags || []).includes('Hot EV Lead')).length;
+                document.getElementById('adminInsLeads').textContent = riders.filter(r => (r.tags || []).includes('Insurance Lead')).length;
+                renderAdminRidersTable(riders);
+            }
+        });
+    }
+
+    function renderAdminRidersTable(riders) {
+        const tbody = document.getElementById('adminRidersTableBody');
+        const lang = localStorage.getItem('selectedLang') || 'en';
+        if (!riders.length) { tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">${TRANSLATIONS[lang].no_riders_db}</td></tr>`; return; }
+        tbody.innerHTML = riders.map(r => {
+            const tags = (r.tags || []).map(t => `<span class="tag-pill ${getTagClass(t)}">${t}</span>`).join('');
+            return `<tr><td>${r.fullName}</td><td>${r.city}</td><td>${r.phone || '—'}</td><td>${r.vehicleType || '—'}</td><td style="color:var(--primary-color); font-weight:700;">${r.totalPoints}</td><td style="color:var(--secondary-color); font-weight:700;">${r.referrals || 0}</td><td>${tags || '—'}</td></tr>`;
+        }).join('');
+    }
+
+    function loadEVLeads() {
+        fetch('/api/admin/leads/ev').then(r => r.json()).then(result => {
+            const tbody = document.getElementById('evLeadsTableBody');
+            if (result.success && result.data.length) {
+                tbody.innerHTML = result.data.map(r => `<tr><td>${r.fullName}</td><td>${r.city}</td><td>${r.phone || '—'}</td><td>${r.vehicleType || '—'}</td><td><span class="tag-pill tag-hot-ev">${r.openToEV || '—'}</span></td><td>${(r.switchTriggers || []).join(', ') || '—'}</td></tr>`).join('');
+            } else tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No EV leads found</td></tr>';
+        });
+    }
+
+    function loadInsLeads() {
+        fetch('/api/admin/leads/insurance').then(r => r.json()).then(result => {
+            const tbody = document.getElementById('insLeadsTableBody');
+            if (result.success && result.data.length) {
+                tbody.innerHTML = result.data.map(r => {
+                    const ac = r.hasAccidentalInsurance || '—';
+                    const hc = r.hasHealthInsurance || '—';
+                    const pp = r.paidOutofPocketAccident || '—';
+                    const acBadge = ac === 'No' ? `<span class="tag-pill tag-insurance">${ac}</span>` : `<span style="color:var(--text-secondary)">${ac}</span>`;
+                    const hcBadge = hc === 'No' ? `<span class="tag-pill tag-insurance">${hc}</span>` : `<span style="color:var(--text-secondary)">${hc}</span>`;
+                    return `<tr><td>${r.fullName}</td><td>${r.city}</td><td>${r.phone || '—'}</td><td>${acBadge}</td><td>${hcBadge}</td><td>${pp === 'Yes' ? '<span class="tag-pill tag-insurance">Yes</span>' : pp}</td></tr>`;
+                }).join('');
+            } else tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No insurance leads found</td></tr>';
+        });
+    }
+
+    function loadTopReferrers() {
+        fetch('/api/admin/riders').then(r => r.json()).then(result => {
+            if (result.success) {
+                const sorted = result.data.sort((a, b) => (b.referrals || 0) - (a.referrals || 0));
+                const tbody = document.getElementById('topReferrersTableBody');
+                tbody.innerHTML = sorted.map((r, i) => {
+                    const rn = i + 1;
+                    const medal = rn === 1 ? '🥇' : rn === 2 ? '🥈' : rn === 3 ? '🥉' : rn;
+                    const ms = [];
+                    if (r.milestone10) ms.push('🏅 10'); if (r.milestone25) ms.push('🏆 25'); if (r.milestone50) ms.push('🎰 50');
+                    return `<tr><td>${medal}</td><td>${r.fullName}</td><td>${r.city}</td><td style="font-family:monospace; color:var(--primary-color);">${r.referralCode || '—'}</td><td style="color:var(--secondary-color); font-weight:700;">${r.referrals || 0}</td><td style="color:var(--primary-color); font-weight:700;">${r.totalPoints}</td><td>${ms.join(' ') || '—'}</td></tr>`;
+                }).join('');
+            }
+        });
+    }
+
+    function loadCityStats() {
+        Promise.all([
+            fetch('/api/admin/city-stats').then(r => r.json()),
+            fetch('/api/admin/vehicle-stats').then(r => r.json())
+        ]).then(([cityRes, vehicleRes]) => {
+            if (cityRes.success) {
+                const cityCtx = document.getElementById('adminCityChart');
+                if (cityCtx && !activeCharts.adminCity) {
+                    activeCharts.adminCity = new Chart(cityCtx.getContext('2d'), { type: 'bar', data: { labels: cityRes.data.map(c => c.city), datasets: [{ data: cityRes.data.map(c => c.count), backgroundColor: 'rgba(59,130,246,0.7)', borderColor: 'rgba(59,130,246,1)', borderWidth: 1.5, borderRadius: 6 }] }, options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#9ca3af' }, grid: { display: false } }, y: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } } } } });
+                }
+            }
+            if (vehicleRes.success) {
+                const vCtx = document.getElementById('adminVehicleChart');
+                const vd = vehicleRes.data;
+                if (vCtx && !activeCharts.adminVehicle) {
+                    activeCharts.adminVehicle = new Chart(vCtx.getContext('2d'), { type: 'doughnut', data: { labels: ['Petrol', 'Electric', 'Diesel', 'Other'], datasets: [{ data: [vd.petrol, vd.electric, vd.diesel, vd.other], backgroundColor: ['rgba(251,191,36,0.8)', 'rgba(16,185,129,0.8)', 'rgba(59,130,246,0.8)', 'rgba(156,163,175,0.8)'], borderColor: '#161e31', borderWidth: 2 }] }, options: { responsive: true, plugins: { legend: { labels: { color: '#f3f4f6' } } } } });
+                }
+            }
+        });
+    }
+
+    // ===== UTILITIES =====
+    function openModal(id) { const m = document.getElementById(id); if (m) m.classList.add('show'); }
+    function closeModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('show'); }
+
+    // Toast notifications
+    function showToast(message, type = 'info') {
+        const existing = document.querySelector('.rw-toast');
+        if (existing) existing.remove();
+        const colors = { success: '#10b981', error: '#ef4444', warning: '#f97316', info: '#3b82f6' };
+        const toast = document.createElement('div');
+        toast.className = 'rw-toast';
+        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i> ${message}`;
+        toast.style.cssText = `position:fixed; bottom:24px; right:24px; z-index:99999; background:${colors[type]}; color:white; padding:0.875rem 1.5rem; border-radius:10px; font-size:0.9rem; font-weight:600; box-shadow:0 8px 32px rgba(0,0,0,0.3); display:flex; align-items:center; gap:0.6rem; max-width:400px; animation:fadeInUp 0.3s ease; pointer-events:none;`;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.animation = 'none'; toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s'; setTimeout(() => toast.remove(), 500); }, 3500);
+    }
+    </script>
+</body>
+</html>
